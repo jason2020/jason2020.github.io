@@ -330,10 +330,10 @@ a {
 
 /* ---- Footer ---- */
 .footer {
-  padding: 2rem clamp(1.25rem, 5vw, 3.5rem);
+  padding: 0.7rem clamp(1.25rem, 5vw, 3.5rem);
   text-align: center;
   font-family: var(--font-mono);
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   color: var(--color-ink-dim);
   border-top: 1px solid color-mix(in oklab, var(--color-bio-teal) 10%, transparent);
 }
