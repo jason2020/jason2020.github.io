@@ -71,7 +71,7 @@ a {
   z-index: 50;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   padding: 1rem clamp(1.25rem, 5vw, 3.5rem);
   backdrop-filter: blur(10px);
   background: color-mix(in oklab, var(--color-abyss) 70%, transparent);

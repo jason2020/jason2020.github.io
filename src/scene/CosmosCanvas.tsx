@@ -9,9 +9,10 @@ import type { Project } from '@/types/project'
 import { CatField } from './CatField'
 import { nebulaFragment, nebulaVertex } from './shaders'
 
-const DWELL_MS = 1500
-const RING_RADIUS = 50
-const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS
+/** How long the user must hold hover before the orb bursts and navigates (ms). */
+const DWELL_MS = 1400
+/** How long the burst flash plays out before navigate fires (ms). */
+const BURST_MS = 180
 
 // ─── nebula background ────────────────────────────────────────────────────────
 
@@ -41,50 +42,93 @@ function NebulaBackground() {
   )
 }
 
-// ─── project node with hover-dwell ring ──────────────────────────────────────
+// ─── project node ─────────────────────────────────────────────────────────────
 
 function ProjectNode({ project }: { project: Project }) {
   const navigate = useNavigate()
   const [hovered, setHovered] = useState(false)
   const color = useMemo(() => new THREE.Color(project.accent), [project.accent])
 
-  // Refs for frame-loop mutations — avoids React state at 60 fps.
-  const dwellStartRef = useRef<number | null>(null)
-  const ringRef = useRef<SVGCircleElement>(null)
+  // All animation state lives in refs — no React state at 60 fps.
   const meshRef = useRef<THREE.Mesh>(null)
+  // Typed as MeshPhysicalMaterial (the base class DistortMaterialImpl extends).
+  // Cast on the JSX ref prop because drei's DistortMaterialImpl is not a public export.
+  const matRef = useRef<THREE.MeshPhysicalMaterial>(null)
+  const dwellStartRef = useRef<number | null>(null)
+  const burstStartRef = useRef<number | null>(null)
+  const navigatedRef = useRef(false)
 
   useFrame((_, dt) => {
-    if (!meshRef.current) return
+    const mesh = meshRef.current
+    const mat = matRef.current
+    if (!mesh || !mat) return
 
-    // Smooth scale spring toward target.
-    const targetScale = hovered ? 1.22 : 1
-    const current = meshRef.current.scale.x
-    const next = current + (targetScale - current) * Math.min(1, dt * 8)
-    meshRef.current.scale.setScalar(next)
+    const now = performance.now()
 
-    if (!hovered || dwellStartRef.current === null || !ringRef.current) return
+    // ── burst phase: rapid scale explosion + flash to white ──
+    if (burstStartRef.current !== null) {
+      const burstElapsed = now - burstStartRef.current
+      const burstT = Math.min(burstElapsed / BURST_MS, 1)
+      // Scale exponentially outward
+      mesh.scale.setScalar(1 + burstT * 3.5)
+      // Emissive floods toward white
+      mat.emissiveIntensity = 2.5 + burstT * 6
+      mat.emissive.lerpColors(color, new THREE.Color('#ffffff'), burstT * 0.7)
 
-    const progress = Math.min((performance.now() - dwellStartRef.current) / DWELL_MS, 1)
-    ringRef.current.style.strokeDashoffset = String(RING_CIRCUMFERENCE * (1 - progress))
+      if (burstT >= 1 && !navigatedRef.current) {
+        navigatedRef.current = true
+        navigate(`/projects/${project.id}`, { viewTransition: true })
+      }
+      return
+    }
 
-    if (progress >= 1) navigate(`/projects/${project.id}`, { viewTransition: true })
+    // ── hover / dwell: orb swells and brightens as you hold ──
+    if (hovered && dwellStartRef.current !== null) {
+      const dwellElapsed = now - dwellStartRef.current
+      const progress = Math.min(dwellElapsed / DWELL_MS, 1)
+
+      // Scale: 1 → 1.55 as dwell fills
+      const targetScale = 1 + progress * 0.55
+      mesh.scale.setScalar(mesh.scale.x + (targetScale - mesh.scale.x) * Math.min(1, dt * 6))
+
+      // Emissive: 1.3 → 3.2 as dwell fills
+      const targetEmissive = 1.3 + progress * 1.9
+      mat.emissiveIntensity += (targetEmissive - mat.emissiveIntensity) * Math.min(1, dt * 5)
+      mat.emissive.lerp(color, 1 - progress * 0.15)
+
+      if (progress >= 1) triggerBurst()
+    } else {
+      // Idle: spring back to resting scale and emissive
+      const restScale = hovered ? 1.15 : 1
+      mesh.scale.setScalar(mesh.scale.x + (restScale - mesh.scale.x) * Math.min(1, dt * 8))
+      mat.emissiveIntensity += (1.3 - mat.emissiveIntensity) * Math.min(1, dt * 4)
+      mat.emissive.lerp(color, Math.min(1, dt * 4))
+    }
   })
+
+  function triggerBurst() {
+    if (burstStartRef.current !== null) return
+    burstStartRef.current = performance.now()
+    document.body.style.cursor = 'auto'
+  }
 
   const onOver = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation()
     setHovered(true)
     dwellStartRef.current = performance.now()
-    document.body.style.cursor = 'none'
+    document.body.style.cursor = 'pointer'
   }
+
   const onOut = () => {
     setHovered(false)
     dwellStartRef.current = null
     document.body.style.cursor = 'auto'
-    if (ringRef.current) ringRef.current.style.strokeDashoffset = String(RING_CIRCUMFERENCE)
   }
+
   const onClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation()
-    navigate(`/projects/${project.id}`, { viewTransition: true })
+    dwellStartRef.current = null
+    triggerBurst()
   }
 
   return (
@@ -92,9 +136,14 @@ function ProjectNode({ project }: { project: Project }) {
       <mesh ref={meshRef} onPointerOver={onOver} onPointerOut={onOut} onClick={onClick}>
         <sphereGeometry args={[0.85, 64, 64]} />
         <MeshDistortMaterial
+          // drei's DistortMaterialImpl is not a public export, so we can't satisfy
+          // its ref type directly. The ref itself is typed as MeshPhysicalMaterial
+          // (the base class) so all downstream access in useFrame is still typed.
+          // biome-ignore lint/suspicious/noExplicitAny: internal drei type not exported
+          ref={matRef as React.Ref<any>}
           color={color}
           emissive={color}
-          emissiveIntensity={hovered ? 2.4 : 1.3}
+          emissiveIntensity={1.3}
           roughness={0.15}
           metalness={0.1}
           distort={0.34}
@@ -102,46 +151,6 @@ function ProjectNode({ project }: { project: Project }) {
         />
       </mesh>
 
-      {/* Dwell progress ring — rendered as an SVG in 3D-tracked HTML space.
-          The ring's strokeDashoffset is mutated directly from useFrame to avoid
-          60-fps React state updates. */}
-      <Html center position={[0, 0, 0.92]} style={{ pointerEvents: 'none' }}>
-        <svg
-          width="120"
-          height="120"
-          viewBox="0 0 120 120"
-          style={{ display: hovered ? 'block' : 'none', overflow: 'visible' }}
-          aria-hidden="true"
-        >
-          {/* faint track */}
-          <circle
-            cx="60"
-            cy="60"
-            r={RING_RADIUS}
-            fill="none"
-            stroke={project.accent}
-            strokeWidth="2"
-            opacity="0.18"
-          />
-          {/* filling arc */}
-          <circle
-            ref={ringRef}
-            cx="60"
-            cy="60"
-            r={RING_RADIUS}
-            fill="none"
-            stroke={project.accent}
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeDasharray={RING_CIRCUMFERENCE}
-            strokeDashoffset={RING_CIRCUMFERENCE}
-            transform="rotate(-90 60 60)"
-            style={{ filter: `drop-shadow(0 0 4px ${project.accent})` }}
-          />
-        </svg>
-      </Html>
-
-      {/* Node label */}
       <Html center position={[0, -1.45, 0]} distanceFactor={9} className="node-label">
         <span style={{ color: project.accent, opacity: hovered ? 1 : 0.72 }}>{project.title}</span>
       </Html>
@@ -155,7 +164,6 @@ function CameraRig() {
   useFrame((state, dt) => {
     const targetX = state.pointer.x * 1.6
     const targetY = state.pointer.y * 1.0
-    // Snappier than before (dt * 5 vs dt * 2.5)
     const k = Math.min(1, dt * 5)
     state.camera.position.x += (targetX - state.camera.position.x) * k
     state.camera.position.y += (targetY - state.camera.position.y) * k
