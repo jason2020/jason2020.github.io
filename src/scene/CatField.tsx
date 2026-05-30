@@ -17,7 +17,7 @@ function makeCatTexture(): THREE.CanvasTexture {
   const ctx = canvas.getContext('2d')
   if (!ctx) return new THREE.CanvasTexture(canvas)
 
-  ctx.fillStyle = '#0e0e16'
+  ctx.fillStyle = '#000'
 
   // Body
   ctx.beginPath()
@@ -46,7 +46,7 @@ function makeCatTexture(): THREE.CanvasTexture {
   ctx.fill()
 
   // Tail (curves up from back)
-  ctx.strokeStyle = '#0e0e16'
+  ctx.strokeStyle = '#000'
   ctx.lineWidth = 9
   ctx.lineCap = 'round'
   ctx.beginPath()
