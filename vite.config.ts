@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import mdx from '@mdx-js/rollup'
 import rehypeShiki from '@shikijs/rehype'
 import tailwindcss from '@tailwindcss/vite'
@@ -40,5 +41,11 @@ export default defineConfig({
         },
       },
     },
+  },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./src/test/setup.ts'],
+    restoreMocks: true,
   },
 })
