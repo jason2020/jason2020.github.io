@@ -88,6 +88,16 @@ a {
   color: var(--color-bio-teal);
 }
 
+/* ---- Shared utility ---- */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--color-bio-teal);
+  margin: 0 0 1rem;
+}
+
 /* ---- Garden hero ---- */
 .gallery {
   max-width: 1180px;
@@ -97,14 +107,6 @@ a {
 .hero {
   text-align: center;
   margin-bottom: clamp(2.5rem, 7vw, 5rem);
-}
-.hero .eyebrow {
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  letter-spacing: 0.35em;
-  text-transform: uppercase;
-  color: var(--color-bio-teal);
-  margin: 0 0 1rem;
 }
 .hero h1 {
   font-family: var(--font-display);
@@ -251,14 +253,6 @@ a {
   pointer-events: none;
   padding: 0 1.5rem;
 }
-.cosmos-hero .eyebrow {
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  letter-spacing: 0.35em;
-  text-transform: uppercase;
-  color: var(--color-bio-teal);
-  margin: 0 0 0.6rem;
-}
 .cosmos-hero h1 {
   font-family: var(--font-display);
   font-weight: 700;
@@ -290,19 +284,6 @@ a {
   user-select: none;
   pointer-events: none;
   text-shadow: 0 0 12px currentColor;
-}
-
-/* ---- Nav journal link ---- */
-.nav-link {
-  font-family: var(--font-mono);
-  font-size: 0.82rem;
-  color: var(--color-ink-dim);
-  letter-spacing: 0.04em;
-  transition: color 0.2s ease;
-}
-.nav-link:hover,
-.nav-link.active {
-  color: var(--color-bio-teal);
 }
 
 /* ---- Project pages ---- */
@@ -345,12 +326,6 @@ a {
   gap: 1.25rem;
   flex-wrap: wrap;
   margin-top: 1.75rem;
-}
-.page-intro {
-  color: var(--color-ink-dim);
-  font-size: 1.05rem;
-  line-height: 1.7;
-  margin: 0.5rem 0 2rem;
 }
 .project-header {
   margin-bottom: 0.5rem;
@@ -410,10 +385,6 @@ a {
   color: #f0f6ff;
   margin: 0;
 }
-.project-post-section .prose {
-  max-width: none;
-}
-
 /* ---- Prose typography (MDX body) ---- */
 .prose {
   color: var(--color-ink);
@@ -501,6 +472,10 @@ a {
   border-radius: 4px;
   background: color-mix(in oklab, var(--color-ink-dim) 15%, transparent);
   color: var(--color-bio-cyan);
+}
+/* Allow prose inside a post section to expand to full available width */
+.project-post-section .prose {
+  max-width: none;
 }
 
 /* ---- Blog index ---- */
