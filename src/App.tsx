@@ -15,6 +15,8 @@ export default function App() {
         <Suspense fallback={<div className="route-loading">lost in the space...</div>}>
           <Routes>
             <Route path="/" element={<Gallery />} />
+            {/* /lame forces the static (reduced-motion) card index for testing */}
+            <Route path="/lame" element={<Gallery forceStatic />} />
             <Route path="/projects/:id" element={<ProjectDetail />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="*" element={<NotFound />} />

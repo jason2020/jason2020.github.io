@@ -5,11 +5,16 @@ import { useReducedMotion } from '@/lib/useReducedMotion'
 // The 3D scene (R3F + postprocessing) is heavy — keep it out of the main bundle.
 const CosmosCanvas = lazy(() => import('@/scene/CosmosCanvas'))
 
-export function Gallery() {
+interface GalleryProps {
+  /** Force the static card index regardless of the OS reduced-motion setting (used by /lame). */
+  forceStatic?: boolean
+}
+
+export function Gallery({ forceStatic = false }: GalleryProps) {
   const reduced = useReducedMotion()
 
-  // Reduced motion: skip the canvas entirely and show a calm, readable card index.
-  if (reduced) {
+  // Static view: reduced motion OR the explicit /lame route — a calm, readable card index.
+  if (reduced || forceStatic) {
     return (
       <div className="gallery">
         <section className="hero">
