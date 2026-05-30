@@ -7,6 +7,7 @@ import * as THREE from 'three'
 import { projects } from '@/content/projects/projects'
 import type { Project } from '@/types/project'
 import { CatField } from './CatField'
+import { StarField } from './StarField'
 import { nebulaFragment, nebulaVertex } from './shaders'
 
 /** How long the user must hold hover before the orb bursts and navigates (ms). */
@@ -188,6 +189,7 @@ export default function CosmosCanvas() {
       <pointLight position={[5, 5, 5]} intensity={60} color="#9be8ff" />
 
       <NebulaBackground />
+      <StarField />
       <CatField />
 
       {projects.map((project) => (
