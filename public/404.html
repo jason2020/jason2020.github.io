@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>jtay's personal website</title>
+    <!--
+      SPA deep-link redirect for GitHub Pages (rafgraph/spa-github-pages).
+      Root user page (jason2020.github.io) lives at the domain root, so keep 0 path segments.
+    -->
+    <script type="text/javascript">
+      const pathSegmentsToKeep = 0
+      const l = window.location
+      l.replace(
+        l.protocol +
+          '//' +
+          l.hostname +
+          (l.port ? ':' + l.port : '') +
+          l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') +
+          '/?/' +
+          l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
+          (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+          l.hash,
+      )
+    </script>
+  </head>
+  <body></body>
+</html>
