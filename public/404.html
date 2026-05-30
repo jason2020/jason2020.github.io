@@ -2,10 +2,49 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>jtay's personal website</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Page not found — jtay's personal website</title>
+    <meta name="robots" content="noindex" />
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 2rem;
+        font-family: Inter, system-ui, sans-serif;
+        background: #04060c;
+        color: #e9f1ff;
+        text-align: center;
+      }
+      .page {
+        max-width: 40rem;
+      }
+      .eyebrow {
+        text-transform: uppercase;
+        letter-spacing: 0.35em;
+        color: #2ff3c4;
+        margin: 0 0 1rem;
+        font-size: 0.8rem;
+      }
+      h1 {
+        margin: 0.25rem 0 1rem;
+        font-size: clamp(2.5rem, 5vw, 4rem);
+        line-height: 1.05;
+      }
+      p {
+        margin: 0.75rem 0;
+        color: #a5b6cc;
+        line-height: 1.65;
+      }
+      a {
+        color: #38e1ff;
+        text-decoration: underline;
+      }
+    </style>
     <!--
-      SPA deep-link redirect for GitHub Pages (rafgraph/spa-github-pages).
-      Root user page (jason2020.github.io) lives at the domain root, so keep 0 path segments.
+      SPA deep-link redirect for GitHub Pages.
+      This file is a fallback that sends unknown URLs back into the app.
     -->
     <script type="text/javascript">
       const pathSegmentsToKeep = 0
@@ -23,5 +62,12 @@
       )
     </script>
   </head>
-  <body></body>
+  <body>
+    <div class="page">
+      <p class="eyebrow">404</p>
+      <h1>Whoops, this page couldn’t be found.</h1>
+      <p>If your browser supports JavaScript, you should be redirected back into the app automatically.</p>
+      <p><a href="/">Return to homepage</a></p>
+    </div>
+  </body>
 </html>
