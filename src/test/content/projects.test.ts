@@ -1,4 +1,4 @@
-import { projectById, projects } from './projects'
+import { projectById, projects } from '@/content/projects/projects'
 
 describe('project registry', () => {
   it('exposes the This Site meta entry', () => {

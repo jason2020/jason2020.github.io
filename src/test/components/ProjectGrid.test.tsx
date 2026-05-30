@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
+import { ProjectGrid } from '@/components/ProjectGrid'
 import { projects } from '@/content/projects/projects'
-import { ProjectGrid } from './ProjectGrid'
 
 describe('<ProjectGrid />', () => {
   it('renders a link to every project that points at its detail page', () => {

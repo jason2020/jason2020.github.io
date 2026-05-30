@@ -32,6 +32,11 @@ bun run dev        # http://localhost:5173
 | `bun run format` | Biome auto-fix |
 | `bun run test` | Run the Vitest suite |
 
+## Testing
+
+Unit and component tests live under `src/test/`, with test setup in `src/test/setup.ts`.
+This keeps source files clean while keeping tests easy to run and maintain in a single dedicated directory.
+
 ## Project registry
 
 Projects live in [`src/content/projects/projects.ts`](src/content/projects/projects.ts) — the single

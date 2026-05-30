@@ -306,10 +306,16 @@ a {
   margin: 0 0 0.4rem;
   color: #f0f6ff;
 }
+.page[data-accent] h1 {
+  color: var(--accent);
+}
 .page .tagline {
   font-family: var(--font-mono);
   font-size: 0.85rem;
   margin: 0 0 1.75rem;
+}
+.page[data-accent] .tagline {
+  color: var(--accent);
 }
 .page .back {
   font-family: var(--font-mono);

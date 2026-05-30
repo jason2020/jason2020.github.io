@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
+import { BackLink } from '@/components/BackLink'
 import { projectById } from '@/content/projects/projects'
 
 export function ProjectDetail() {
@@ -9,9 +10,7 @@ export function ProjectDetail() {
   if (!project) {
     return (
       <article className="page">
-        <Link to="/" className="back" viewTransition>
-          ← back to the cosmos
-        </Link>
+        <BackLink to="/">← back to the cosmos</BackLink>
         <h1>Lost in deep space</h1>
         <p>No body with the id “{id}” orbits here yet.</p>
       </article>
@@ -21,18 +20,16 @@ export function ProjectDetail() {
   return (
     <article
       className="page"
-      style={{ viewTransitionName: `project-${project.id}` } as CSSProperties}
+      style={
+        { '--accent': project.accent, viewTransitionName: `project-${project.id}` } as CSSProperties
+      }
     >
-      <Link to="/" className="back" viewTransition>
-        ← back to the cosmos
-      </Link>
-      <h1 style={{ color: project.accent }}>{project.title}</h1>
-      <p className="tagline" style={{ color: project.accent }}>
-        {project.tagline}
-      </p>
+      <BackLink to="/">← back to the cosmos</BackLink>
+      <h1>{project.title}</h1>
+      <p className="tagline">{project.tagline}</p>
 
       <p>{project.summary}</p>
-      <p style={{ color: 'var(--color-ink-dim)' }}>
+      <p>
         The full writeup for this project lands here next — the story of how it was built, rendered
         straight from a simple markdown file with syntax-highlighted code.
       </p>

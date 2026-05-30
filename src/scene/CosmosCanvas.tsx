@@ -4,7 +4,8 @@ import { Bloom, EffectComposer } from '@react-three/postprocessing'
 import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import * as THREE from 'three'
-import { type Project, projects } from '@/content/projects/projects'
+import { projects } from '@/content/projects/projects'
+import type { Project } from '@/types/project'
 import { nebulaFragment, nebulaVertex } from './shaders'
 
 /** Full-screen animated nebula behind everything. */
