@@ -5,7 +5,11 @@ describe('blog loader', () => {
     const posts = getAllPosts()
     expect(posts.length).toBeGreaterThan(0)
     for (let i = 1; i < posts.length; i++) {
-      expect(posts[i - 1]!.frontmatter.date >= posts[i]!.frontmatter.date).toBe(true)
+      const prev = posts[i - 1]
+      const curr = posts[i]
+      if (prev && curr) {
+        expect(prev.frontmatter.date >= curr.frontmatter.date).toBe(true)
+      }
     }
   })
 

@@ -18,7 +18,8 @@
     "enabled": true,
     "rules": {
       "recommended": true,
-      "complexity": { "noImportantStyles": "off" }
+      "complexity": { "noImportantStyles": "off" },
+      "style": { "noDescendingSpecificity": "off" }
     }
   },
   "overrides": [
