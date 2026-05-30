@@ -47,7 +47,7 @@ a {
 /* ---- App shell ---- */
 .app-shell {
   display: flex;
-  min-height: 100%;
+  min-height: 100dvh;
   flex-direction: column;
 }
 .app-shell > main {
@@ -225,7 +225,9 @@ a {
 .cosmos-stage {
   position: relative;
   flex: 1;
-  min-height: 0;
+  /* Safety floor so the stage never collapses even if the flex chain can't
+     resolve a height; the canvas inside is absolutely positioned to fill it. */
+  min-height: 70svh;
   width: 100%;
   overflow: hidden;
 }

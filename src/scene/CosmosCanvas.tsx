@@ -130,6 +130,7 @@ export default function CosmosCanvas() {
   return (
     <Canvas
       className="cosmos-canvas"
+      style={{ position: 'absolute', inset: 0 }}
       dpr={[1, 2]}
       gl={{ antialias: true }}
       camera={{ position: [0, 0, 8], fov: 50 }}
