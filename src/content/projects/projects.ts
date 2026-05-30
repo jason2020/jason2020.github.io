@@ -12,11 +12,15 @@ export const projects: Project[] = [
     summary:
       'The space you are drifting through. An immersive star-chart where every project is its own glowing body. Built with React Three Fiber, GLSL, View Transitions, Bun + Vite, and shipped on GitHub Pages.',
     tech: ['React 19', 'TypeScript', 'R3F', 'GLSL', 'Vite', 'Bun'],
+    tags: ['web', '3d', 'personal'],
     repoUrl: 'https://github.com/jason2020/jason2020.github.io',
     liveUrl: 'https://jason2020.github.io',
     accent: '#2ff3c4',
     position: [0, 0, 0],
-    blogSlug: 'how-i-built-this',
+    posts: {
+      journal: 'this-site-journal',
+      deepDive: 'this-site-deep-dive',
+    },
   },
 ]
 

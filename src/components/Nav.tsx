@@ -1,12 +1,15 @@
-import { Link } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
 
-/** Minimal wordmark — no tabs. The cosmos is the whole site. */
+/** Minimal two-item nav: wordmark home, journal link. */
 export function Nav() {
   return (
     <header className="nav">
-      <Link to="/" className="brand" viewTransition>
+      <NavLink to="/" className="brand" viewTransition end>
         jtay<span> ✦</span>
-      </Link>
+      </NavLink>
+      <NavLink to="/blog" className="nav-link" viewTransition>
+        journal
+      </NavLink>
     </header>
   )
 }

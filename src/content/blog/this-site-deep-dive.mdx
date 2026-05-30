@@ -1,0 +1,204 @@
+---
+title: "Deep dive: the tech behind this site"
+date: "2026-05-30"
+type: deep-dive
+projectId: this-site
+excerpt: "A technical walkthrough of React Three Fiber, GLSL shaders, the MDX pipeline, Biome, and why each piece was chosen."
+tags: [three-js, react, glsl, biome, mdx, vite]
+---
+
+This post is a detailed breakdown of how this site works technically. The goal is that after reading
+it, you understand every layer — not just "it uses Three.js" but what Three.js *is doing*, why it's
+structured the way it is, and how the pieces fit together.
+
+## React Three Fiber: React as a 3D scene graph
+
+[Three.js](https://threejs.org/) is a JavaScript library that wraps WebGL — the browser API for
+GPU-accelerated graphics. Raw WebGL is very low-level (you're essentially writing C-like shaders and
+managing buffers manually), so Three.js gives you a scene graph with objects, cameras, lights, and
+materials.
+
+**React Three Fiber (R3F)** maps Three.js objects to React components. Instead of:
+
+```js
+const mesh = new THREE.Mesh(
+  new THREE.SphereGeometry(0.85, 64, 64),
+  new THREE.MeshStandardMaterial({ color: '#2ff3c4' })
+)
+scene.add(mesh)
+```
+
+You write:
+
+```tsx
+<mesh>
+  <sphereGeometry args={[0.85, 64, 64]} />
+  <meshStandardMaterial color="#2ff3c4" />
+</mesh>
+```
+
+The big win is that React's component model — props, state, hooks, Suspense — all work naturally
+with 3D objects. This site uses `useState` for hover state on each project node, `useRef` to hold
+mutable Three.js objects without triggering re-renders, and `useFrame` (an R3F hook that fires every
+animation frame) to animate things.
+
+### The render loop
+
+Three.js runs a render loop: your code runs ~60 times per second, updating positions, uniforms, and
+other state, then Three.js submits the scene to the GPU. In R3F this is `useFrame`:
+
+```tsx
+useFrame((state, dt) => {
+  // dt = delta time since last frame (seconds)
+  // state.clock.elapsedTime = total seconds since scene started
+  uniforms.uTime.value += dt
+})
+```
+
+Mutating `uniforms.uTime.value` directly (rather than using `setState`) is intentional — it bypasses
+React's reconciler entirely, which is how 60fps animations stay smooth.
+
+## GLSL shaders: programmable pixels
+
+The background of this site is not a static gradient. It's a **fragment shader** — a small program
+that runs on the GPU and computes the colour of every single pixel independently.
+
+Shaders are written in **GLSL** (OpenGL Shading Language), which is C-like syntax that compiles to
+GPU code. There are two types:
+
+- **Vertex shader**: runs per-vertex, determines where things are on screen
+- **Fragment shader**: runs per-pixel, determines the colour
+
+The nebula background uses **Simplex noise** — a smooth, naturally-varying noise function — layered
+multiple times (**fBm**, fractional Brownian motion) to create the wispy, organic look:
+
+```glsl
+float fbm(vec2 p) {
+  float total = 0.0;
+  float amp = 0.5;
+  for (int i = 0; i < 5; i++) {
+    total += snoise(p) * amp;  // add a layer of noise
+    p *= 2.02;                  // zoom in for next layer
+    amp *= 0.5;                 // quieter each time
+  }
+  return total;
+}
+```
+
+Each loop iteration adds finer detail at half the amplitude. The result is something that looks like
+real nebula structure. The `uTime` uniform passed from `useFrame` is added to the noise coordinates,
+which makes it animate over time.
+
+The three colours (`uColorDeep`, `uColorTeal`, `uColorViolet`) are mixed based on the noise value,
+creating regions of different colour in the nebula.
+
+## MeshDistortMaterial: organic blob effect
+
+The project nodes use `MeshDistortMaterial` from `@react-three/drei`. Under the hood this is a
+custom shader that distorts the mesh's vertices in the vertex shader using noise:
+
+```glsl
+// simplified from drei's implementation
+transformed += normalize(transformed) * snoise(transformed + uTime) * distort;
+```
+
+The `distort` prop controls how much the sphere deforms, and `speed` controls how fast. Combined
+with emissive intensity (how much the material glows regardless of lighting), this gives the
+pulsing, organic appearance.
+
+## Drei: helpers for common R3F patterns
+
+`@react-three/drei` is a utility library for R3F. This site uses:
+
+- **`<Float>`** — wraps a mesh in a subtle floating animation (sine-wave position + gentle rotation)
+- **`<Html>`** — renders HTML DOM elements positioned in 3D space (used for the project name labels)
+- **Postprocessing** — via `@react-three/postprocessing`, which wraps the `postprocessing` library's
+  effects (Bloom here) in R3F components
+
+**Bloom** is a post-processing effect: after the scene renders to a framebuffer, a second pass
+identifies bright pixels (above `luminanceThreshold`) and blurs them outward, simulating the
+light-bleed you'd see from real bright lights. It's what makes the nodes look like they're glowing
+rather than just brightly coloured.
+
+## View Transitions API
+
+When you click a project node, the navigation to its detail page uses the
+[View Transitions API](https://developer.mozilla.org/en-US/docs/Web/API/View_Transitions_API) — a
+browser API (Chrome/Edge, progressively enhanced elsewhere) that captures "before" and "after"
+snapshots of the page and morphs between them.
+
+The morph is wired up via React Router v7's `viewTransition` prop on `<Link>`. The specific
+element that morphs is identified by setting the same `view-transition-name` CSS property on both
+sides:
+
+```css
+/* on the node's label in the canvas */
+view-transition-name: project-this-site;
+
+/* on the detail page article */
+view-transition-name: project-this-site;
+```
+
+The browser's default cross-fade becomes a smooth positional morph of that specific element.
+
+## Biome: one tool for lint and format
+
+[Biome](https://biomejs.dev/) replaces both ESLint and Prettier with a single Rust-based tool. It's
+dramatically faster (milliseconds vs seconds on large codebases) and the configuration is a single
+`biome.json` instead of `.eslintrc`, `.prettierrc`, and associated plugins.
+
+The tradeoff is fewer rules than ESLint's plugin ecosystem, but for a project like this the
+recommended ruleset is more than sufficient. The key settings here:
+
+```json
+{
+  "formatter": { "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 },
+  "javascript": { "formatter": { "quoteStyle": "single", "semicolons": "asNeeded" } },
+  "css": { "parser": { "tailwindDirectives": true } }
+}
+```
+
+`tailwindDirectives: true` tells Biome's CSS parser to accept Tailwind's custom at-rules like
+`@theme` and `@import "tailwindcss"` without flagging them as errors.
+
+## MDX + Shiki: blog with code highlighting
+
+The blog (including this post) is written in [MDX](https://mdxjs.com/) — Markdown with embedded
+React components. The MDX compiler (via `@mdx-js/rollup`) processes each `.mdx` file at build time
+into a React component.
+
+[Shiki](https://shiki.style/) handles syntax highlighting. Unlike runtime highlighters (Prism,
+Highlight.js), Shiki runs at build time via `@shikijs/rehype` and outputs pre-highlighted HTML using
+VS Code's tokeniser and the same grammar files. Zero client-side highlighting cost.
+
+The pipeline: MDX file → remark parses Markdown → `remark-frontmatter` strips YAML frontmatter →
+`remark-mdx-frontmatter` re-exports it as a named `frontmatter` export → `@shikijs/rehype` converts
+fenced code blocks to highlighted HTML → the React component is bundled.
+
+The `frontmatter` named export is how the blog index knows each post's title, date, and type without
+importing the full MDX content — Vite's `import.meta.glob` with `{ eager: true, import: 'frontmatter' }`
+extracts just that export at build time.
+
+## The build and deploy pipeline
+
+Everything is orchestrated by **Bun** (package manager + task runner) and built by **Vite**:
+
+```
+bun install        → resolves deps, writes bun.lock (lockfile for reproducible CI)
+bun run build      → tsc -b (type check) && vite build (bundles everything)
+bun run test       → vitest run (unit + component tests, jsdom environment)
+bun run lint       → biome check (lint + format verification)
+```
+
+On `git push main`, a GitHub Actions workflow (`oven-sh/setup-bun` → `bun install --frozen-lockfile`
+→ `bun run build`) uploads `dist/` to GitHub Pages using `actions/deploy-pages`. The entire
+cycle from push to live site takes about 30 seconds.
+
+The `dist/` directory contains:
+- `index.html` — entry point
+- `assets/index-[hash].js` — app code (~45 KB gzip)
+- `assets/vendor-3d-[hash].js` — Three.js + R3F (~314 KB gzip, lazy-loaded)
+- `assets/GardenCanvas-[hash].js` — scene code (~2 KB gzip, lazy-loaded)
+
+The 3D libraries are code-split into their own chunk via `manualChunks` in `vite.config.ts` and
+only fetched when the canvas actually mounts, so first paint is fast even on slow connections.

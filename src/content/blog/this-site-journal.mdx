@@ -1,0 +1,57 @@
+---
+title: "Building my personal site: why an immersive 3D cosmos?"
+date: "2026-05-30"
+type: journal
+projectId: this-site
+excerpt: "I wanted a personal site that felt like something, not just a list of links. Here's the story of what I built and the decisions behind it."
+tags: [personal, web, three-js]
+---
+
+I've been meaning to build a proper personal site for a while. Not just a resume page — something that
+actually represents how I think about software. Most personal sites feel like glorified CVs. I wanted
+mine to feel like a *place* you step into.
+
+## The idea
+
+The concept started pretty simply: what if your projects lived in a space you could actually explore?
+Not thumbnails on a grid, but things that float and breathe and respond to you. I kept coming back to
+the image of navigating a star chart — each project its own body, its own gravity.
+
+I also wanted it to be self-referential. The site is the first exhibit in its own gallery. The
+"This Site" node you're clicking on right now *is* the thing you're reading about. I like that loop.
+
+## What I actually built
+
+The main view is a React Three Fiber canvas — a WebGL scene that fills the whole screen. Each project
+renders as a glowing, organically-distorting sphere (a "body" in the cosmos metaphor). The background
+is a custom GLSL shader: an animated nebula built from layered simplex noise. There are small
+particles drifting past — originally stars, now black cats, because why not.
+
+Clicking a body navigates to its page using the View Transitions API, which morphs the element from
+its 3D position into the page header. That seamless morph is one of my favourite details.
+
+## The stack decisions
+
+I landed on **Bun + Vite** over something like Next.js because this is a pure client-side experience
+— there's no server, no SSR needed. Vite's plugin ecosystem (especially for Three.js and MDX) is
+excellent, and Bun handles everything else fast.
+
+For linting and formatting I'm using **Biome** instead of ESLint + Prettier. It's a single tool,
+significantly faster, and the configuration is honestly simpler. I was skeptical at first but it's
+been great.
+
+The blog (what you're reading now) runs on MDX — React in your markdown — with Shiki handling syntax
+highlighting at build time. No runtime highlighting cost.
+
+## What I'm still figuring out
+
+The site only has one real project right now (itself), which is a bit circular. As I build more things
+they'll show up as new bodies in the cosmos. That's the plan — a living gallery that grows with the
+work.
+
+I'm also still thinking about how "live demos" inside the project nodes should work. The architecture
+supports it (each project can export a lazy-loaded demo component) but building something that's
+actually worth showing takes time.
+
+If you want the technical breakdown — how the GLSL shader works, what React Three Fiber actually does,
+why I chose these particular tools — I wrote a deep dive linked from this project's page.
