@@ -37,7 +37,7 @@ export function StarField() {
       positions[i * 3 + 1] = (Math.random() - 0.5) * 20
       positions[i * 3 + 2] = (Math.random() - 0.5) * 14 - 3
       // Mostly small distant stars, a few bright close ones.
-      sizes[i] = Math.random() < 0.85 ? 0.03 + Math.random() * 0.03 : 0.07 + Math.random() * 0.05
+      sizes[i] = Math.random() < 0.85 ? 0.04 + Math.random() * 0.04 : 0.09 + Math.random() * 0.06
       phases[i] = Math.random()
       const c = pickColor()
       colors[i * 3] = c.r
