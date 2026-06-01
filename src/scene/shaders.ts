@@ -111,7 +111,7 @@ export const nebulaFragment = /* glsl */ `
     vec2 pp = uPointer * vec2(0.7, 0.5); // cursor mapped into p-space
     float pd = length(p - pp);
     float infl = exp(-pd * 2.2); // tighter falloff → warp stays close to the cursor
-    vec2 pw = p + normalize(p - pp + 1e-4) * 0.1 * infl;
+    vec2 pw = p + normalize(p - pp + 1e-4) * 0.05 * infl;
 
     float n1 = fbm(pw * 1.4 + vec2(t, -t * 0.6));
     float n2 = fbm(pw * 3.1 - vec2(t * 0.8, t * 0.5) + n1);
