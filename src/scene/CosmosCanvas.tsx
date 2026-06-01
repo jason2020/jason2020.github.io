@@ -135,7 +135,7 @@ function ProjectNode({ project }: { project: Project }) {
   return (
     <Float speed={1.4} rotationIntensity={0.5} floatIntensity={1.1} position={project.position}>
       <mesh ref={meshRef} onPointerOver={onOver} onPointerOut={onOut} onClick={onClick}>
-        <sphereGeometry args={[0.85, 64, 64]} />
+        <sphereGeometry args={[0.7, 64, 64]} />
         <MeshDistortMaterial
           // drei's DistortMaterialImpl is not a public export, so we can't satisfy
           // its ref type directly. The ref itself is typed as MeshPhysicalMaterial
@@ -152,7 +152,7 @@ function ProjectNode({ project }: { project: Project }) {
         />
       </mesh>
 
-      <Html center position={[0, -1.45, 0]} distanceFactor={9} className="node-label">
+      <Html center position={[0, -1.2, 0]} distanceFactor={9} className="node-label">
         <span style={{ color: project.accent, opacity: hovered ? 1 : 0.72 }}>{project.title}</span>
       </Html>
     </Float>
@@ -181,10 +181,10 @@ export default function CosmosCanvas() {
       style={{ position: 'absolute', inset: 0 }}
       dpr={[1, 2]}
       gl={{ antialias: true }}
-      camera={{ position: [0, 0, 8], fov: 50 }}
+      camera={{ position: [0, 0, 9.5], fov: 50 }}
     >
       <color attach="background" args={['#04060c']} />
-      <fog attach="fog" args={['#04060c', 7, 20]} />
+      <fog attach="fog" args={['#04060c', 8, 24]} />
       <ambientLight intensity={0.6} />
       <pointLight position={[5, 5, 5]} intensity={60} color="#9be8ff" />
 
