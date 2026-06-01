@@ -23,7 +23,7 @@ function NebulaBackground() {
     () => ({
       uTime: { value: 0 },
       uPointer: { value: new THREE.Vector2(0, 0) },
-      uColorDeep: { value: new THREE.Color('#04060c') },
+      uColorDeep: { value: new THREE.Color('#02040a') },
       uColorTeal: { value: new THREE.Color('#0c3b3f') },
       uColorViolet: { value: new THREE.Color('#2a1d52') },
     }),
@@ -96,8 +96,8 @@ function ProjectNode({ project }: { project: Project }) {
       const targetScale = 1 + progress * 0.55
       mesh.scale.setScalar(mesh.scale.x + (targetScale - mesh.scale.x) * Math.min(1, dt * 6))
 
-      // Emissive: 1.3 → 3.2 as dwell fills
-      const targetEmissive = 1.3 + progress * 1.9
+      // Emissive: 1.05 → 2.95 as dwell fills
+      const targetEmissive = 1.05 + progress * 1.9
       mat.emissiveIntensity += (targetEmissive - mat.emissiveIntensity) * Math.min(1, dt * 5)
       mat.emissive.lerp(color, 1 - progress * 0.15)
 
@@ -106,7 +106,7 @@ function ProjectNode({ project }: { project: Project }) {
       // Idle: spring back to resting scale and emissive
       const restScale = hovered ? 1.15 : 1
       mesh.scale.setScalar(mesh.scale.x + (restScale - mesh.scale.x) * Math.min(1, dt * 8))
-      mat.emissiveIntensity += (1.3 - mat.emissiveIntensity) * Math.min(1, dt * 4)
+      mat.emissiveIntensity += (1.05 - mat.emissiveIntensity) * Math.min(1, dt * 4)
       mat.emissive.lerp(color, Math.min(1, dt * 4))
     }
   })
@@ -154,7 +154,7 @@ function ProjectNode({ project }: { project: Project }) {
           ref={matRef as React.Ref<any>}
           color={color}
           emissive={color}
-          emissiveIntensity={1.3}
+          emissiveIntensity={1.05}
           roughness={0.15}
           metalness={0.1}
           distort={0.5}
@@ -193,8 +193,8 @@ export default function CosmosCanvas() {
       gl={{ antialias: true }}
       camera={{ position: [0, 0, 8], fov: 50 }}
     >
-      <color attach="background" args={['#04060c']} />
-      <fog attach="fog" args={['#04060c', 7, 20]} />
+      <color attach="background" args={['#02040a']} />
+      <fog attach="fog" args={['#02040a', 7, 20]} />
       <ambientLight intensity={0.6} />
       <pointLight position={[5, 5, 5]} intensity={60} color="#9be8ff" />
 
