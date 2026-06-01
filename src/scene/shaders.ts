@@ -55,6 +55,7 @@ export const nebulaFragment = /* glsl */ `
   precision highp float;
   varying vec2 vUv;
   uniform float uTime;
+  uniform vec2 uPointer; // smoothed cursor in NDC (-1..1)
   uniform vec3 uColorDeep;
   uniform vec3 uColorTeal;
   uniform vec3 uColorViolet;
@@ -105,8 +106,14 @@ export const nebulaFragment = /* glsl */ `
     vec2 p = (uv - 0.5) * vec2(2.4, 1.5);
     float t = uTime * 0.045;
 
-    float n1 = fbm(p * 1.4 + vec2(t, -t * 0.6));
-    float n2 = fbm(p * 3.1 - vec2(t * 0.8, t * 0.5) + n1);
+    // Pointer-reactive domain warp: the field swells gently toward the cursor.
+    vec2 pp = uPointer * vec2(0.7, 0.5); // cursor mapped into p-space
+    float pd = length(p - pp);
+    float infl = exp(-pd * 1.6);
+    vec2 pw = p + normalize(p - pp + 1e-4) * 0.18 * infl;
+
+    float n1 = fbm(pw * 1.4 + vec2(t, -t * 0.6));
+    float n2 = fbm(pw * 3.1 - vec2(t * 0.8, t * 0.5) + n1);
 
     float neb = smoothstep(-0.2, 0.9, n1 * 0.7 + n2 * 0.45);
     vec3 col = mix(uColorDeep, uColorTeal, neb);
@@ -115,6 +122,10 @@ export const nebulaFragment = /* glsl */ `
     // bright filaments
     float filaments = pow(smoothstep(0.55, 0.95, n2), 2.0);
     col += uColorTeal * filaments * 0.35;
+
+    // cursor light: a soft cool brightening that follows the pointer
+    float glow = exp(-pd * pd * 2.2);
+    col += (uColorTeal * 0.6 + uColorViolet * 0.4) * glow * 0.5;
 
     // radial vignette so edges fall into the dark
     float vig = smoothstep(1.25, 0.25, length((uv - 0.5) * vec2(1.7, 1.05)));

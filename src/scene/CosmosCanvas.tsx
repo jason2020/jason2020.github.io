@@ -22,14 +22,17 @@ function NebulaBackground() {
   const uniforms = useMemo(
     () => ({
       uTime: { value: 0 },
+      uPointer: { value: new THREE.Vector2(0, 0) },
       uColorDeep: { value: new THREE.Color('#04060c') },
       uColorTeal: { value: new THREE.Color('#0c3b3f') },
       uColorViolet: { value: new THREE.Color('#2a1d52') },
     }),
     [],
   )
-  useFrame((_, dt) => {
+  useFrame((state, dt) => {
     uniforms.uTime.value += dt
+    // Ease the warp/glow toward the live cursor so it trails smoothly.
+    uniforms.uPointer.value.lerp(state.pointer, Math.min(1, dt * 3))
   })
   return (
     <mesh position={[0, 0, -6]} scale={[34, 20, 1]}>
