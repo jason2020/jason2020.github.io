@@ -24,8 +24,8 @@ I also wanted it to be self-referential. The site is the first exhibit in its ow
 
 The main view is a React Three Fiber canvas — a WebGL scene that fills the whole screen. Each project
 renders as a glowing, organically-distorting sphere (a "body" in the cosmos metaphor). The background
-is a custom GLSL shader: an animated nebula built from layered simplex noise. There are small
-particles drifting past — originally stars, now black cats, because why not.
+is a custom GLSL shader: an animated nebula built from layered simplex noise. A drifting starfield
+sits on top, with brighter stars sweeping in close to sell the depth.
 
 Clicking a body navigates to its page using the View Transitions API, which morphs the element from
 its 3D position into the page header. That seamless morph is one of my favourite details.
