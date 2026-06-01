@@ -80,13 +80,23 @@ function paintCat(ctx: CanvasRenderingContext2D, s: number, phase: number): void
   ctx.fill()
 }
 
-/** Builds one animation frame: glow pass + crisp pass for visibility on dark bg. */
-function makeCatFrame(phase: number): THREE.CanvasTexture {
+/**
+ * Builds one animation frame: glow pass + crisp pass for visibility on dark bg.
+ * `faceLeft` mirrors the silhouette so the head leads to the left — we keep both
+ * facings as separate textures so the cat can always face into the screen
+ * without relying on negative sprite scale (which mirrors unreliably).
+ */
+function makeCatFrame(phase: number, faceLeft: boolean): THREE.CanvasTexture {
   const canvas = document.createElement('canvas')
   canvas.width = TEX_SIZE
   canvas.height = TEX_SIZE
   const ctx = canvas.getContext('2d')
   if (!ctx) return new THREE.CanvasTexture(canvas)
+
+  if (faceLeft) {
+    ctx.translate(TEX_SIZE, 0)
+    ctx.scale(-1, 1)
+  }
 
   // Subtle cool rim-glow so the pure-black cat reads against the dark cosmos.
   ctx.shadowColor = 'rgba(150, 205, 255, 0.45)'
@@ -103,55 +113,87 @@ function makeCatFrame(phase: number): THREE.CanvasTexture {
   return tex
 }
 
-// ─── float-through behaviour ───────────────────────────────────────────────────
+// ─── peek behaviour ─────────────────────────────────────────────────────────
+// The cat slinks in from any screen edge, peeks for a short beat, then slips
+// back out — and bolts if you click it. Edge geometry is derived from the live
+// viewport so the peek lines up with the real screen edge at any aspect ratio.
 
-const CAT_OPACITY = 0.9
-const CAT_SCALE = 1.0 // smaller — a subtle visitor, not a focal point
-const ANIM_CYCLE = 0.9 // seconds per limb paddle loop
-const SPEED_MIN = 0.4
-const SPEED_MAX = 0.9
-const ROT_MIN = 0.12 // rad/s — gentle tumble
-const ROT_MAX = 0.5
-const LIFETIME_MIN = 9
-const LIFETIME_MAX = 16
-const WAIT_MIN = 2.5 // shorter gaps → the cat pops in more often
+const CAT_OPACITY = 0.92
+const CAT_SCALE = 1.0
+const ANIM_CYCLE = 1.3 // seconds per paddle loop — unhurried while peeking
+const PEEK_OUT = 0.05 // how far past the edge the cat's centre sits (head leads in)
+const HIDDEN_MARGIN = 1.0 // how far off-screen the fully-hidden position sits
+const ENTER_DUR = 0.55
+const EXIT_DUR = 0.6
+const PEEK_MIN = 0.8 // a brief peek
+const PEEK_MAX = 2.2
+const WAIT_MIN = 2.5
 const WAIT_MAX = 7
-const FADE = 1.4 // seconds to fade in / out
+const FADE = 0.4 // seconds to fade in / out
+const BOB_AMP = 0.06 // gentle in/out bob while peeking
+const TILT_AMP = 0.05 // gentle curious head-tilt while peeking
 
 const rand = (min: number, max: number) => min + Math.random() * (max - min)
+const easeOut = (t: number) => 1 - (1 - t) ** 3
+const easeIn = (t: number) => t * t
+
+type Edge = 'left' | 'right' | 'top' | 'bottom'
+
+/**
+ * Per-edge geometry. `sign` is the direction along the slide axis, `rotation`
+ * spins the side-profile sprite so its head points toward screen centre, and
+ * `faceLeft` selects the mirrored frame set where needed (so the cat is never
+ * upside-down). The art faces +x by default, so:
+ *   left  → head +x (no change)   right → head -x (mirror)
+ *   top   → head -y (rotate -90°)  bottom → head +y (rotate +90°)
+ */
+const EDGES: Record<
+  Edge,
+  { vertical: boolean; sign: number; rotation: number; faceLeft: boolean }
+> = {
+  left: { vertical: false, sign: -1, rotation: 0, faceLeft: false },
+  right: { vertical: false, sign: 1, rotation: 0, faceLeft: true },
+  top: { vertical: true, sign: 1, rotation: -Math.PI / 2, faceLeft: false },
+  bottom: { vertical: true, sign: -1, rotation: Math.PI / 2, faceLeft: false },
+}
+const EDGE_LIST = Object.keys(EDGES) as Edge[]
+
+type CatPhase = 'enter' | 'peek' | 'exit'
 
 interface CatRun {
   active: boolean
-  t: number
-  lifetime: number
+  phase: CatPhase
+  t: number // seconds elapsed in the current phase
+  peekDuration: number
   waitTimer: number
-  pos: THREE.Vector3
-  vel: THREE.Vector3
-  rotSpeed: number
+  edge: Edge
+  cross: number // position along the edge, as a fraction of the cross half-extent
   animTime: number
   frame: number
 }
 
 function startRun(run: CatRun): void {
-  // Enter from a random point, drift in a random in-plane direction.
-  run.pos.set(rand(-6.5, 6.5), rand(-3.2, 3.2), rand(-1.5, 2.5))
-  const angle = rand(0, Math.PI * 2)
-  const speed = rand(SPEED_MIN, SPEED_MAX)
-  run.vel.set(Math.cos(angle) * speed, Math.sin(angle) * speed * 0.6, 0)
-  run.rotSpeed = rand(ROT_MIN, ROT_MAX) * (Math.random() < 0.5 ? -1 : 1)
-  run.lifetime = rand(LIFETIME_MIN, LIFETIME_MAX)
+  run.edge = EDGE_LIST[Math.floor(Math.random() * EDGE_LIST.length)] ?? 'left'
+  run.cross = rand(-0.55, 0.55)
+  run.peekDuration = rand(PEEK_MIN, PEEK_MAX)
+  run.phase = 'enter'
   run.t = 0
+  run.frame = -1 // force a texture refresh for the new edge's facing
   run.active = true
 }
 
 /**
- * The author's cat — a glowing black silhouette that floats into the cosmos at a
- * random spot, tumbles gently while paddling its legs, then drifts off and
- * reappears somewhere new after a pause.
+ * The author's cat — a pure-black silhouette that peeks in from a screen edge,
+ * watches for a brief moment, then slinks back out. Click it and it bolts.
  */
 export function FloatingCat() {
-  const frames = useMemo(
-    () => Array.from({ length: FRAME_COUNT }, (_, i) => makeCatFrame(i / FRAME_COUNT)),
+  // Two facings baked as separate textures so the cat can always face inward.
+  const framesRight = useMemo(
+    () => Array.from({ length: FRAME_COUNT }, (_, i) => makeCatFrame(i / FRAME_COUNT, false)),
+    [],
+  )
+  const framesLeft = useMemo(
+    () => Array.from({ length: FRAME_COUNT }, (_, i) => makeCatFrame(i / FRAME_COUNT, true)),
     [],
   )
   const spriteRef = useRef<THREE.Sprite>(null)
@@ -159,17 +201,22 @@ export function FloatingCat() {
 
   const run = useRef<CatRun>({
     active: false,
+    phase: 'enter',
     t: 0,
-    lifetime: 0,
+    peekDuration: 0,
     waitTimer: rand(0.5, 2.5),
-    pos: new THREE.Vector3(),
-    vel: new THREE.Vector3(),
-    rotSpeed: 0,
+    edge: 'left',
+    cross: 0,
     animTime: 0,
     frame: -1,
   })
 
-  useFrame((_, dt) => {
+  const endRun = (r: CatRun) => {
+    r.active = false
+    r.waitTimer = rand(WAIT_MIN, WAIT_MAX)
+  }
+
+  useFrame((state, dt) => {
     const sprite = spriteRef.current
     const mat = matRef.current
     if (!sprite || !mat) return
@@ -185,26 +232,58 @@ export function FloatingCat() {
     r.t += dt
     r.animTime += dt
 
-    // Drift + tumble
-    sprite.position.copy(r.pos.addScaledVector(r.vel, dt))
-    mat.rotation += r.rotSpeed * dt
+    const cfg = EDGES[r.edge]
+    const half = cfg.vertical ? state.viewport.height / 2 : state.viewport.width / 2
+    const crossHalf = cfg.vertical ? state.viewport.width / 2 : state.viewport.height / 2
+    const hiddenMain = cfg.sign * (half + HIDDEN_MARGIN)
+    const peekMain = cfg.sign * (half + PEEK_OUT)
+    const crossPos = r.cross * crossHalf
 
-    // Cycle limb-animation frames
+    let main = peekMain
+    let opacity = CAT_OPACITY
+    let tilt = 0
+
+    switch (r.phase) {
+      case 'enter': {
+        const p = Math.min(r.t / ENTER_DUR, 1)
+        main = hiddenMain + (peekMain - hiddenMain) * easeOut(p)
+        opacity = Math.min(r.t / FADE, 1) * CAT_OPACITY
+        if (p >= 1) {
+          r.phase = 'peek'
+          r.t = 0
+        }
+        break
+      }
+      case 'peek': {
+        main = peekMain + Math.sin(r.animTime * 1.6) * BOB_AMP
+        tilt = Math.sin(r.animTime * 1.1) * TILT_AMP
+        if (r.t >= r.peekDuration) {
+          r.phase = 'exit'
+          r.t = 0
+        }
+        break
+      }
+      case 'exit': {
+        const p = Math.min(r.t / EXIT_DUR, 1)
+        main = peekMain + (hiddenMain - peekMain) * easeIn(p)
+        opacity = (1 - p) * CAT_OPACITY
+        if (p >= 1) endRun(r)
+        break
+      }
+    }
+
+    if (cfg.vertical) sprite.position.set(crossPos, main, 0)
+    else sprite.position.set(main, crossPos, 0)
+    mat.rotation = cfg.rotation + tilt
+    mat.opacity = Math.max(0, opacity)
+
+    // Cycle the paddle frames (using this edge's facing) for subtle life.
+    const frameSet = cfg.faceLeft ? framesLeft : framesRight
     const frame = Math.floor((r.animTime / ANIM_CYCLE) * FRAME_COUNT) % FRAME_COUNT
     if (frame !== r.frame) {
       r.frame = frame
-      mat.map = frames[frame] ?? null
+      mat.map = frameSet[frame] ?? null
       mat.needsUpdate = true
-    }
-
-    // Fade in at the start of the run, fade out at the end
-    const fadeIn = Math.min(r.t / FADE, 1)
-    const fadeOut = Math.min((r.lifetime - r.t) / FADE, 1)
-    mat.opacity = Math.max(0, Math.min(fadeIn, fadeOut)) * CAT_OPACITY
-
-    if (r.t >= r.lifetime) {
-      r.active = false
-      r.waitTimer = rand(WAIT_MIN, WAIT_MAX)
     }
   })
 
@@ -212,7 +291,7 @@ export function FloatingCat() {
     <sprite ref={spriteRef} scale={[CAT_SCALE, CAT_SCALE, 1]}>
       <spriteMaterial
         ref={matRef}
-        map={frames[0]}
+        map={framesRight[0]}
         transparent
         opacity={0}
         depthWrite={false}
