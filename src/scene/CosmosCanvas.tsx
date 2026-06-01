@@ -177,12 +177,29 @@ function ProjectNode({ project }: { project: Project }) {
   )
 }
 
-// ─── camera parallax ─────────────────────────────────────────────────────────
+// ─── camera: intro reveal + parallax ──────────────────────────────────────────
+
+const INTRO_DUR = 1.5 // seconds of the zoom-out reveal
+const INTRO_START_Z = 4.2 // camera starts pulled in close…
+const BASE_Z = 8 // …and eases back out to here
+const easeOutCubic = (t: number) => 1 - (1 - t) ** 3
 
 function CameraRig() {
+  // Intro progresses 0 → 1 once per mount, so this plays on first load *and*
+  // every time the cosmos remounts (e.g. clicking the wordmark to come home).
+  const introRef = useRef(0)
+
   useFrame((state, dt) => {
-    const targetX = state.pointer.x * 1.6
-    const targetY = state.pointer.y * 1.0
+    if (introRef.current < 1) {
+      introRef.current = Math.min(1, introRef.current + dt / INTRO_DUR)
+      state.camera.position.z =
+        INTRO_START_Z + (BASE_Z - INTRO_START_Z) * easeOutCubic(introRef.current)
+    }
+
+    // Pointer parallax, ramped in by intro progress so it doesn't fight the reveal.
+    const p = introRef.current
+    const targetX = state.pointer.x * 1.6 * p
+    const targetY = state.pointer.y * 1.0 * p
     const k = Math.min(1, dt * 5)
     state.camera.position.x += (targetX - state.camera.position.x) * k
     state.camera.position.y += (targetY - state.camera.position.y) * k
@@ -201,7 +218,7 @@ export default function CosmosCanvas() {
       style={{ position: 'absolute', inset: 0 }}
       dpr={[1, 2]}
       gl={{ antialias: true }}
-      camera={{ position: [0, 0, 8], fov: 50 }}
+      camera={{ position: [0, 0, INTRO_START_Z], fov: 50 }}
     >
       <color attach="background" args={['#02040a']} />
       <fog attach="fog" args={['#02040a', 7, 20]} />

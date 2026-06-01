@@ -236,6 +236,22 @@ a {
 .cosmos-stage canvas {
   display: block;
   touch-action: none;
+  /* Fade up as the camera eases out — the cosmos reveal on every mount. */
+  animation: cosmos-reveal 1.5s ease-out both;
+}
+@keyframes cosmos-reveal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cosmos-stage canvas,
+  .cosmos-hero {
+    animation: none;
+  }
 }
 .cosmos-loading {
   position: absolute;
@@ -252,6 +268,8 @@ a {
   text-align: center;
   pointer-events: none;
   padding: 0 1.5rem;
+  /* Settle in just behind the camera reveal. */
+  animation: cosmos-reveal 1.9s ease-out both;
 }
 .cosmos-hero h1 {
   font-family: var(--font-display);
