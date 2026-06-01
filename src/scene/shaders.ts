@@ -19,7 +19,7 @@ export const starVertex = /* glsl */ `
     vec4 mv = modelViewMatrix * vec4(position, 1.0);
     // Per-star twinkle from its own phase: a slow breathing brightness.
     float tw = 0.5 + 0.5 * sin(uTime * 1.8 + aPhase * 6.2831853);
-    vTwinkle = 0.35 + tw * 0.65;
+    vTwinkle = 0.5 + tw * 0.7;
     vColor = aColor;
     // Perspective size attenuation (three's formula) modulated by the twinkle.
     gl_PointSize = aSize * uScale / -mv.z * (0.6 + tw * 0.8);
@@ -39,7 +39,7 @@ export const starFragment = /* glsl */ `
     if (d > 0.5) discard;
     float core = smoothstep(0.5, 0.0, d);
     float glow = pow(core, 1.6); // tight bright centre, soft halo
-    gl_FragColor = vec4(vColor, glow * vTwinkle);
+    gl_FragColor = vec4(vColor * 1.25, glow * vTwinkle);
   }
 `
 
