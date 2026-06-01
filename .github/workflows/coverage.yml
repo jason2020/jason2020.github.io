@@ -1,0 +1,41 @@
+name: Coverage
+
+on:
+  push:
+    branches: [main]
+    # Avoid churn from the badge-update commit itself.
+    paths-ignore:
+      - '.github/badges/**'
+      - 'README.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: coverage-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run test:coverage
+      - run: node scripts/coverage-badge.mjs
+      - name: Commit coverage badge if it changed
+        run: |
+          if [[ -n "$(git status --porcelain .github/badges/coverage.json)" ]]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add .github/badges/coverage.json
+            # Pushing with GITHUB_TOKEN does not retrigger workflows, so no loop.
+            git commit -m "chore: update coverage badge [skip ci]"
+            git push
+          else
+            echo "Coverage badge unchanged."
+          fi

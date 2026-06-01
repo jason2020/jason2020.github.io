@@ -1,5 +1,7 @@
 # jtay's personal website
 
+![coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fjason2020%2Fjason2020.github.io%2Fmain%2F.github%2Fbadges%2Fcoverage.json)
+
 An immersive 3D personal site — a small **cosmos** where each project is a glowing body you
 can click into. Built as a self-referential gallery: the site is its own first exhibit.
 
@@ -31,11 +33,20 @@ bun run dev        # http://localhost:5173
 | `bun run lint` | Biome check (lint + format verify) |
 | `bun run format` | Biome auto-fix |
 | `bun run test` | Run the Vitest suite |
+| `bun run test:coverage` | Run tests and write a coverage report to `coverage/` |
 
 ## Testing
 
 Unit and component tests live under `src/test/`, with test setup in `src/test/setup.ts`.
 This keeps source files clean while keeping tests easy to run and maintain in a single dedicated directory.
+
+Run `bun run test:coverage` for a coverage report (text summary in the console, browsable
+HTML in `coverage/`). The badge at the top is regenerated on every push to `main` by
+[`.github/workflows/coverage.yml`](.github/workflows/coverage.yml), which writes a
+[shields.io endpoint](https://shields.io/badges/endpoint-badge) to `.github/badges/coverage.json`.
+
+The 3D scene (`src/scene/**`) is WebGL/GLSL that jsdom can't execute, so it's excluded from
+coverage; everything else — components, routes, `lib`, and the project registry — is covered.
 
 ## Project registry
 
