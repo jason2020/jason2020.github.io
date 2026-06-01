@@ -31,8 +31,8 @@ function NebulaBackground() {
   )
   useFrame((state, dt) => {
     uniforms.uTime.value += dt
-    // Ease the warp/glow toward the live cursor so it trails smoothly.
-    uniforms.uPointer.value.lerp(state.pointer, Math.min(1, dt * 3))
+    // Track the cursor closely (small amount of easing to avoid jitter).
+    uniforms.uPointer.value.lerp(state.pointer, Math.min(1, dt * 12))
   })
   return (
     <mesh position={[0, 0, -6]} scale={[34, 20, 1]}>
@@ -96,8 +96,8 @@ function ProjectNode({ project }: { project: Project }) {
       const targetScale = 1 + progress * 0.55
       mesh.scale.setScalar(mesh.scale.x + (targetScale - mesh.scale.x) * Math.min(1, dt * 6))
 
-      // Emissive: 1.05 → 2.95 as dwell fills
-      const targetEmissive = 1.05 + progress * 1.9
+      // Emissive: 0.8 → 2.7 as dwell fills
+      const targetEmissive = 0.8 + progress * 1.9
       mat.emissiveIntensity += (targetEmissive - mat.emissiveIntensity) * Math.min(1, dt * 5)
       mat.emissive.lerp(color, 1 - progress * 0.15)
 
@@ -106,7 +106,7 @@ function ProjectNode({ project }: { project: Project }) {
       // Idle: spring back to resting scale and emissive
       const restScale = hovered ? 1.15 : 1
       mesh.scale.setScalar(mesh.scale.x + (restScale - mesh.scale.x) * Math.min(1, dt * 8))
-      mat.emissiveIntensity += (1.05 - mat.emissiveIntensity) * Math.min(1, dt * 4)
+      mat.emissiveIntensity += (0.8 - mat.emissiveIntensity) * Math.min(1, dt * 4)
       mat.emissive.lerp(color, Math.min(1, dt * 4))
     }
   })
@@ -154,7 +154,7 @@ function ProjectNode({ project }: { project: Project }) {
           ref={matRef as React.Ref<any>}
           color={color}
           emissive={color}
-          emissiveIntensity={1.05}
+          emissiveIntensity={0.8}
           roughness={0.15}
           metalness={0.1}
           distort={0.5}
