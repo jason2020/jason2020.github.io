@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom'
 import * as THREE from 'three'
 import { projects } from '@/content/projects/projects'
 import type { Project } from '@/types/project'
-import { CatField } from './CatField'
+import { FloatingCat } from './FloatingCat'
 import { StarField } from './StarField'
 import { nebulaFragment, nebulaVertex } from './shaders'
 
@@ -190,7 +190,7 @@ export default function CosmosCanvas() {
 
       <NebulaBackground />
       <StarField />
-      <CatField />
+      <FloatingCat />
 
       {projects.map((project) => (
         <ProjectNode key={project.id} project={project} />

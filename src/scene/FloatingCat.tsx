@@ -149,7 +149,7 @@ function startRun(run: CatRun): void {
  * random spot, tumbles gently while paddling its legs, then drifts off and
  * reappears somewhere new after a pause.
  */
-export function CatField() {
+export function FloatingCat() {
   const frames = useMemo(
     () => Array.from({ length: FRAME_COUNT }, (_, i) => makeCatFrame(i / FRAME_COUNT)),
     [],
