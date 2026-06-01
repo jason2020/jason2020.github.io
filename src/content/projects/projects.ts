@@ -1,7 +1,7 @@
 import type { Project } from '@/types/project'
 
 /**
- * The single source of truth for the gallery. Both the 3D garden scene and the
+ * The single source of truth for the gallery. Both the 3D cosmos scene and the
  * project detail pages read from this list.
  */
 export const projects: Project[] = [

@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* ---- Bioluminescent garden design tokens ---- */
+/* ---- Cosmos design tokens ---- */
 @theme {
   --color-abyss: #02040a;
   --color-abyss-soft: #0a1020;
@@ -98,7 +98,7 @@ a {
   margin: 0 0 1rem;
 }
 
-/* ---- Garden hero ---- */
+/* ---- Hero ---- */
 .gallery {
   max-width: 1180px;
   margin: 0 auto;
@@ -134,7 +134,7 @@ a {
   line-height: 1.65;
 }
 
-/* ---- Garden grid + glow cards ---- */
+/* ---- Project grid + glow cards ---- */
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));

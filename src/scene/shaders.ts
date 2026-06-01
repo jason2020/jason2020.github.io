@@ -1,4 +1,4 @@
-// Inlined GLSL for the garden's animated nebula backdrop.
+// Inlined GLSL for the cosmos's animated nebula backdrop.
 // Kept as TS strings so they ride the normal module graph (no .glsl typing setup),
 // while vite-plugin-glsl stays available for future standalone shaders.
 
