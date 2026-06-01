@@ -54,28 +54,28 @@ function paintCat(ctx: CanvasRenderingContext2D, s: number, phase: number): void
     ctx.stroke()
   }
 
-  // Body
+  // Body — rounder, plumper little torso
   ctx.beginPath()
-  ctx.ellipse(s * 0.42, s * 0.55, s * 0.26, s * 0.17, 0, 0, Math.PI * 2)
+  ctx.ellipse(s * 0.43, s * 0.55, s * 0.23, s * 0.2, 0, 0, Math.PI * 2)
   ctx.fill()
 
-  // Head
+  // Head — a touch bigger and rounder so it reads as a cute round kitty
   ctx.beginPath()
-  ctx.arc(s * 0.7, s * 0.45, s * 0.17, 0, Math.PI * 2)
+  ctx.arc(s * 0.69, s * 0.44, s * 0.18, 0, Math.PI * 2)
   ctx.fill()
 
-  // Ears — wide bases (cuter) sitting inside the head dome so they connect
+  // Ears — wide bases, shorter tips: rounder, kitten-cute proportions
   ctx.beginPath()
-  ctx.moveTo(s * 0.55, s * 0.34)
-  ctx.lineTo(s * 0.53, s * 0.1)
+  ctx.moveTo(s * 0.54, s * 0.33)
+  ctx.lineTo(s * 0.55, s * 0.18)
   ctx.lineTo(s * 0.71, s * 0.34)
   ctx.closePath()
   ctx.fill()
 
   ctx.beginPath()
-  ctx.moveTo(s * 0.69, s * 0.34)
-  ctx.lineTo(s * 0.9, s * 0.11)
-  ctx.lineTo(s * 0.85, s * 0.36)
+  ctx.moveTo(s * 0.68, s * 0.34)
+  ctx.lineTo(s * 0.86, s * 0.19)
+  ctx.lineTo(s * 0.85, s * 0.35)
   ctx.closePath()
   ctx.fill()
 }
@@ -106,7 +106,7 @@ function makeCatFrame(phase: number): THREE.CanvasTexture {
 // ─── float-through behaviour ───────────────────────────────────────────────────
 
 const CAT_OPACITY = 0.9
-const CAT_SCALE = 1.35 // uniform — square texture, so rotation never shears
+const CAT_SCALE = 1.0 // smaller — a subtle visitor, not a focal point
 const ANIM_CYCLE = 0.9 // seconds per limb paddle loop
 const SPEED_MIN = 0.4
 const SPEED_MAX = 0.9
@@ -114,8 +114,8 @@ const ROT_MIN = 0.12 // rad/s — gentle tumble
 const ROT_MAX = 0.5
 const LIFETIME_MIN = 9
 const LIFETIME_MAX = 16
-const WAIT_MIN = 5
-const WAIT_MAX = 14
+const WAIT_MIN = 2.5 // shorter gaps → the cat pops in more often
+const WAIT_MAX = 7
 const FADE = 1.4 // seconds to fade in / out
 
 const rand = (min: number, max: number) => min + Math.random() * (max - min)
@@ -161,7 +161,7 @@ export function FloatingCat() {
     active: false,
     t: 0,
     lifetime: 0,
-    waitTimer: rand(1, 4),
+    waitTimer: rand(0.5, 2.5),
     pos: new THREE.Vector3(),
     vel: new THREE.Vector3(),
     rotSpeed: 0,
