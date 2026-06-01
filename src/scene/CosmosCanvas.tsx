@@ -133,7 +133,13 @@ function ProjectNode({ project }: { project: Project }) {
   }
 
   return (
-    <Float speed={1.4} rotationIntensity={0.5} floatIntensity={1.1} position={project.position}>
+    <Float
+      speed={1.6}
+      rotationIntensity={0.6}
+      floatIntensity={0.25}
+      floatingRange={[-0.06, 0.06]}
+      position={project.position}
+    >
       <mesh ref={meshRef} onPointerOver={onOver} onPointerOut={onOut} onClick={onClick}>
         <sphereGeometry args={[0.7, 64, 64]} />
         <MeshDistortMaterial
@@ -147,8 +153,8 @@ function ProjectNode({ project }: { project: Project }) {
           emissiveIntensity={1.3}
           roughness={0.15}
           metalness={0.1}
-          distort={0.34}
-          speed={2.2}
+          distort={0.5}
+          speed={2.6}
         />
       </mesh>
 
