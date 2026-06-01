@@ -5,8 +5,10 @@ import {
   ChromaticAberration,
   EffectComposer,
   Noise,
+  ToneMapping,
   Vignette,
 } from '@react-three/postprocessing'
+import { ToneMappingMode } from 'postprocessing'
 import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import * as THREE from 'three'
@@ -219,6 +221,10 @@ export default function CosmosCanvas() {
 
       <EffectComposer>
         <Bloom mipmapBlur intensity={1.2} luminanceThreshold={0.25} luminanceSmoothing={0.3} />
+        {/* ACES filmic tone mapping: map the HDR scene to display range with a
+            cinematic highlight roll-off. The composer otherwise renders with no
+            tone mapping, so bright bloom would simply clip to white. */}
+        <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
         <Vignette offset={0.35} darkness={0.6} eskil={false} />
         <ChromaticAberration offset={caOffset} />
         <Noise premultiply opacity={0.04} />
