@@ -3,7 +3,7 @@ import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { starFragment, starVertex } from './shaders'
 
-const STAR_COUNT = 600
+const STAR_COUNT = 900
 
 // Cool-leaning palette: mostly blue-white, with a scatter of teal, violet and
 // the occasional warm star so the field reads as having real depth and variety.
@@ -33,9 +33,11 @@ export function StarField() {
     const phases = new Float32Array(STAR_COUNT)
     const colors = new Float32Array(STAR_COUNT * 3)
     for (let i = 0; i < STAR_COUNT; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 30
-      positions[i * 3 + 1] = (Math.random() - 0.5) * 20
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 14 - 3
+      positions[i * 3] = (Math.random() - 0.5) * 34
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 24
+      // Spread deep-to-near (z up to +6, just shy of the z=8 camera) so a layer
+      // of close stars sweeps past with strong parallax — sells the 3D depth.
+      positions[i * 3 + 2] = -9 + Math.random() * 15
       // Mostly small distant stars, a few bright close ones.
       sizes[i] = Math.random() < 0.85 ? 0.04 + Math.random() * 0.04 : 0.09 + Math.random() * 0.06
       phases[i] = Math.random()

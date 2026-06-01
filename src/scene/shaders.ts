@@ -22,7 +22,8 @@ export const starVertex = /* glsl */ `
     vTwinkle = 0.5 + tw * 0.7;
     vColor = aColor;
     // Perspective size attenuation (three's formula) modulated by the twinkle.
-    gl_PointSize = aSize * uScale / -mv.z * (0.6 + tw * 0.8);
+    // Clamp so a star that drifts close to the camera stays a crisp point.
+    gl_PointSize = min(aSize * uScale / -mv.z * (0.6 + tw * 0.8), 18.0);
     gl_Position = projectionMatrix * mv;
   }
 `
@@ -39,7 +40,7 @@ export const starFragment = /* glsl */ `
     if (d > 0.5) discard;
     float core = smoothstep(0.5, 0.0, d);
     float glow = pow(core, 1.6); // tight bright centre, soft halo
-    gl_FragColor = vec4(vColor * 1.25, glow * vTwinkle);
+    gl_FragColor = vec4(vColor * 1.8, glow * vTwinkle);
   }
 `
 
