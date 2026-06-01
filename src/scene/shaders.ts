@@ -125,7 +125,7 @@ export const nebulaFragment = /* glsl */ `
 
     // cursor light: a soft cool brightening that follows the pointer
     float glow = exp(-pd * pd * 2.2);
-    col += (uColorTeal * 0.6 + uColorViolet * 0.4) * glow * 0.5;
+    col += (uColorTeal * 0.6 + uColorViolet * 0.4) * glow * 0.3;
 
     // radial vignette so edges fall into the dark
     float vig = smoothstep(1.25, 0.25, length((uv - 0.5) * vec2(1.7, 1.05)));
