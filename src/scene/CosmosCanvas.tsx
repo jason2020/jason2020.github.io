@@ -1,6 +1,12 @@
 import { Float, Html, MeshDistortMaterial } from '@react-three/drei'
 import { Canvas, type ThreeEvent, useFrame } from '@react-three/fiber'
-import { Bloom, EffectComposer } from '@react-three/postprocessing'
+import {
+  Bloom,
+  ChromaticAberration,
+  EffectComposer,
+  Noise,
+  Vignette,
+} from '@react-three/postprocessing'
 import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import * as THREE from 'three'
@@ -186,6 +192,8 @@ function CameraRig() {
 // ─── canvas ───────────────────────────────────────────────────────────────────
 
 export default function CosmosCanvas() {
+  // A barely-there chromatic split at the edges — cinematic, not glitchy.
+  const caOffset = useMemo(() => new THREE.Vector2(0.0006, 0.0006), [])
   return (
     <Canvas
       style={{ position: 'absolute', inset: 0 }}
@@ -211,6 +219,9 @@ export default function CosmosCanvas() {
 
       <EffectComposer>
         <Bloom mipmapBlur intensity={1.2} luminanceThreshold={0.25} luminanceSmoothing={0.3} />
+        <Vignette offset={0.35} darkness={0.6} eskil={false} />
+        <ChromaticAberration offset={caOffset} />
+        <Noise premultiply opacity={0.04} />
       </EffectComposer>
     </Canvas>
   )
