@@ -10,7 +10,8 @@
     "lint": "biome check .",
     "format": "biome check --write .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@mdx-js/react": "^3.1.1",
@@ -37,6 +38,7 @@
     "@types/react-dom": "^19.2.3",
     "@types/three": "^0.184.1",
     "@vitejs/plugin-react": "^6.0.1",
+    "@vitest/coverage-v8": "4.1.7",
     "jsdom": "^29.1.1",
     "rehype-slug": "^6.0.0",
     "remark-frontmatter": "^5.0.0",

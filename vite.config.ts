@@ -50,5 +50,18 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     restoreMocks: true,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text-summary', 'json-summary', 'html', 'lcov'],
+      reportsDirectory: './coverage',
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: [
+        'src/main.tsx', // app entry/bootstrap
+        'src/scene/**', // WebGL + GLSL — not unit-testable under jsdom
+        'src/types/**', // type-only declarations
+        'src/test/**', // the tests themselves
+        'src/**/*.d.ts',
+      ],
+    },
   },
 })
