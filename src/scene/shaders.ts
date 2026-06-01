@@ -56,7 +56,7 @@ export const nebulaFragment = /* glsl */ `
   precision highp float;
   varying vec2 vUv;
   uniform float uTime;
-  uniform vec2 uPointer; // smoothed cursor in NDC (-1..1)
+  uniform vec2 uPointer; // smoothed cursor, already projected into nebula p-space
   uniform vec3 uColorDeep;
   uniform vec3 uColorTeal;
   uniform vec3 uColorViolet;
@@ -108,7 +108,7 @@ export const nebulaFragment = /* glsl */ `
     float t = uTime * 0.045;
 
     // Pointer-reactive domain warp: the field swells gently toward the cursor.
-    vec2 pp = uPointer * vec2(0.7, 0.5); // cursor mapped into p-space
+    vec2 pp = uPointer; // already in p-space, projected on the CPU
     float pd = length(p - pp);
     float infl = exp(-pd * 2.2); // tighter falloff → warp stays close to the cursor
     vec2 pw = p + normalize(p - pp + 1e-4) * 0.05 * infl;

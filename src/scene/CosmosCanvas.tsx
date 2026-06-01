@@ -26,6 +26,14 @@ const BURST_MS = 180
 
 // ─── nebula background ────────────────────────────────────────────────────────
 
+// Nebula plane geometry. NEBULA_PX/PY must match the p-space mapping in
+// shaders.ts: `p = (uv - 0.5) * vec2(NEBULA_PX, NEBULA_PY)`.
+const NEBULA_Z = -6
+const NEBULA_W = 34
+const NEBULA_H = 20
+const NEBULA_PX = 2.4
+const NEBULA_PY = 1.5
+
 function NebulaBackground() {
   const uniforms = useMemo(
     () => ({
@@ -37,13 +45,26 @@ function NebulaBackground() {
     }),
     [],
   )
+  const cursorTarget = useMemo(() => new THREE.Vector2(), [])
+
   useFrame((state, dt) => {
     uniforms.uTime.value += dt
-    // Track the cursor closely (small amount of easing to avoid jitter).
-    uniforms.uPointer.value.lerp(state.pointer, Math.min(1, dt * 12))
+
+    // Project the cursor onto the nebula plane so the warp/glow sits exactly
+    // under the pointer at any aspect ratio and camera distance.
+    const cam = state.camera as THREE.PerspectiveCamera
+    const dist = cam.position.z - NEBULA_Z
+    const halfH = Math.tan((cam.fov * Math.PI) / 360) * dist
+    const halfW = halfH * (state.size.width / state.size.height)
+    const centerK = NEBULA_Z / cam.position.z // parallax shifts the view centre
+    const wx = centerK * cam.position.x + state.pointer.x * halfW
+    const wy = centerK * cam.position.y + state.pointer.y * halfH
+    cursorTarget.set((wx / NEBULA_W) * NEBULA_PX, (wy / NEBULA_H) * NEBULA_PY)
+    uniforms.uPointer.value.lerp(cursorTarget, Math.min(1, dt * 14))
   })
+
   return (
-    <mesh position={[0, 0, -6]} scale={[34, 20, 1]}>
+    <mesh position={[0, 0, NEBULA_Z]} scale={[NEBULA_W, NEBULA_H, 1]}>
       <planeGeometry args={[1, 1]} />
       <shaderMaterial
         vertexShader={nebulaVertex}
