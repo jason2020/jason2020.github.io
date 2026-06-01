@@ -2,6 +2,47 @@
 // Kept as TS strings so they ride the normal module graph (no .glsl typing setup),
 // while vite-plugin-glsl stays available for future standalone shaders.
 
+// ─── starfield ────────────────────────────────────────────────────────────────
+// A GPU-driven point cloud: each star carries its own size, colour and twinkle
+// phase, so the whole field shimmers independently with zero per-frame CPU work.
+
+export const starVertex = /* glsl */ `
+  uniform float uTime;
+  uniform float uScale; // drawingBufferHeight * 0.5 — matches three's size attenuation
+  attribute float aSize;
+  attribute float aPhase;
+  attribute vec3 aColor;
+  varying vec3 vColor;
+  varying float vTwinkle;
+
+  void main() {
+    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+    // Per-star twinkle from its own phase: a slow breathing brightness.
+    float tw = 0.5 + 0.5 * sin(uTime * 1.8 + aPhase * 6.2831853);
+    vTwinkle = 0.35 + tw * 0.65;
+    vColor = aColor;
+    // Perspective size attenuation (three's formula) modulated by the twinkle.
+    gl_PointSize = aSize * uScale / -mv.z * (0.6 + tw * 0.8);
+    gl_Position = projectionMatrix * mv;
+  }
+`
+
+export const starFragment = /* glsl */ `
+  precision highp float;
+  varying vec3 vColor;
+  varying float vTwinkle;
+
+  void main() {
+    // Round, soft-edged sprite from the square point.
+    vec2 c = gl_PointCoord - 0.5;
+    float d = length(c);
+    if (d > 0.5) discard;
+    float core = smoothstep(0.5, 0.0, d);
+    float glow = pow(core, 1.6); // tight bright centre, soft halo
+    gl_FragColor = vec4(vColor, glow * vTwinkle);
+  }
+`
+
 export const nebulaVertex = /* glsl */ `
   varying vec2 vUv;
   void main() {
