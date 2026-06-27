@@ -7,52 +7,47 @@ excerpt: "I wanted a personal site that felt like something, not just a list of 
 tags: [personal, web, three-js]
 ---
 
-I've been meaning to build a proper personal site for a while. Not just a resume page — something that
-actually represents how I think about software. Most personal sites feel like glorified CVs. I wanted
-mine to feel like a *place* you step into.
+I've been meaning to build a proper personal site for years. The problem is that I'm a chronic
+procrastinator, and a personal site is exactly the kind of project that loses every fight for my
+attention. What finally got it over the line was AI. The productivity boost turned out to be just
+barely enough to drag me past the activation energy, so here we are.
+
+The one rule I set for myself: don't build another boring CV site. There are plenty of those already.
+I wanted something that isn't lame and is actually fun to land on, more like a place you step into
+than a list of links with my name at the top.
 
 ## The idea
 
-The concept started pretty simply: what if your projects lived in a space you could actually explore?
-Not thumbnails on a grid, but things that float and breathe and respond to you. I kept coming back to
-the image of navigating a star chart — each project its own body, its own gravity.
+The concept was simple. What if your projects lived in a space you could actually explore? Not
+thumbnails in a grid, but things that float and react when you get close. I kept coming back to the
+image of a star chart, where every project is its own body with its own gravity.
 
-I also wanted it to be self-referential. The site is the first exhibit in its own gallery. The
-"This Site" node you're clicking on right now *is* the thing you're reading about. I like that loop.
+I also wanted the whole thing to be self-referential. The site is the first exhibit in its own
+gallery. The "This Site" node you clicked to get here is the thing you're reading about right now.
 
 ## What I actually built
 
-The main view is a React Three Fiber canvas — a WebGL scene that fills the whole screen. Each project
-renders as a glowing, organically-distorting sphere (a "body" in the cosmos metaphor). The background
-is a custom GLSL shader: an animated nebula built from layered simplex noise. A drifting starfield
-sits on top, with brighter stars sweeping in close to sell the depth.
+The main view is a React Three Fiber canvas, a WebGL scene that fills the entire screen. Each project
+renders as a glowing sphere that distorts organically, a "body" in the cosmos metaphor. The
+background is a custom GLSL shader: an animated nebula made from layered simplex noise. A drifting
+starfield sits on top, with a few brighter stars sweeping in close to sell the depth.
 
-Clicking a body navigates to its page using the View Transitions API, which morphs the element from
-its 3D position into the page header. That seamless morph is one of my favourite details.
-
-## The stack decisions
-
-I landed on **Bun + Vite** over something like Next.js because this is a pure client-side experience
-— there's no server, no SSR needed. Vite's plugin ecosystem (especially for Three.js and MDX) is
-excellent, and Bun handles everything else fast.
-
-For linting and formatting I'm using **Biome** instead of ESLint + Prettier. It's a single tool,
-significantly faster, and the configuration is honestly simpler. I was skeptical at first but it's
-been great.
-
-The blog (what you're reading now) runs on MDX — React in your markdown — with Shiki handling syntax
-highlighting at build time. No runtime highlighting cost.
+Clicking a body navigates to its page using the View Transitions API, which morphs the sphere from
+its spot in 3D into the page header. That morph is one of my favourite details on the whole site.
 
 ## What I'm still figuring out
 
-The site only has one real project right now (itself), which is a bit circular. As I build more things
-they'll show up as new bodies in the cosmos. That's the plan — a living gallery that grows with the
-work.
+The first real test of "is this any good" was opening the site on a slower laptop, where it ran like
+a slideshow. That turned into a whole performance pass: the scene now measures its own frame rate and
+quietly scales detail up or down to match the machine. Strong computer, full glory. Weak computer,
+still smooth. There's a writeup of how that works in the deep dive.
 
-I'm also still thinking about how "live demos" inside the project nodes should work. The architecture
-supports it (each project can export a lazy-loaded demo component) but building something that's
-actually worth showing takes time.
+The bigger open question is content. The cosmos has exactly one real project right now (itself), which
+is a little circular. As I build and ship more things, they show up as new bodies. The plan is a
+gallery that grows with the work, not a launch-day museum that never changes.
 
-If you want the technical breakdown — how the GLSL shader works, what React Three Fiber actually does,
-why I chose these particular tools — I had Claude write a deep dive below (this is also my
-documentation, hehe).
+I also want live demos running inside the project nodes. The architecture already allows it, but
+making a demo that's actually worth showing takes real time.
+
+If you want the technical breakdown, how the shader works and why I picked these tools, I had Claude
+write the deep dive below. It doubles as my documentation, which I'm not mad about.

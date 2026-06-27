@@ -3,19 +3,19 @@ title: "Deep dive: the tech behind this site"
 date: "2026-05-30"
 type: deep-dive
 projectId: this-site
-excerpt: "A technical walkthrough of React Three Fiber, GLSL shaders, the MDX pipeline, Biome, and why each piece was chosen."
+excerpt: "A technical walkthrough of React Three Fiber, GLSL shaders, adaptive performance, the MDX pipeline, Biome, and why each piece was chosen."
 tags: [three-js, react, glsl, biome, mdx, vite]
 ---
 
 This post is a detailed breakdown of how this site works technically. The goal is that after reading
-it, you understand every layer — not just "it uses Three.js" but what Three.js *is doing*, why it's
-structured the way it is, and how the pieces fit together.
+it you understand every layer, not just "it uses Three.js" but what Three.js is actually doing, why
+it's structured the way it is, and how the pieces fit together.
 
 ## React Three Fiber: React as a 3D scene graph
 
-[Three.js](https://threejs.org/) is a JavaScript library that wraps WebGL — the browser API for
-GPU-accelerated graphics. Raw WebGL is very low-level (you're essentially writing C-like shaders and
-managing buffers manually), so Three.js gives you a scene graph with objects, cameras, lights, and
+[Three.js](https://threejs.org/) is a JavaScript library that wraps WebGL, the browser API for
+GPU-accelerated graphics. Raw WebGL is very low level (you are essentially writing C-like shaders and
+managing buffers by hand), so Three.js gives you a scene graph with objects, cameras, lights, and
 materials.
 
 **React Three Fiber (R3F)** maps Three.js objects to React components. Instead of:
@@ -37,10 +37,10 @@ You write:
 </mesh>
 ```
 
-The big win is that React's component model — props, state, hooks, Suspense — all work naturally
-with 3D objects. This site uses `useState` for hover state on each project node, `useRef` to hold
-mutable Three.js objects without triggering re-renders, and `useFrame` (an R3F hook that fires every
-animation frame) to animate things.
+The big win is that React's component model (props, state, hooks, Suspense) all works naturally with
+3D objects. This site uses `useState` for hover state on each project node, `useRef` to hold mutable
+Three.js objects without triggering re-renders, and `useFrame`, an R3F hook that fires every
+animation frame, to animate things.
 
 ### The render loop
 
@@ -55,13 +55,13 @@ useFrame((state, dt) => {
 })
 ```
 
-Mutating `uniforms.uTime.value` directly (rather than using `setState`) is intentional — it bypasses
-React's reconciler entirely, which is how 60fps animations stay smooth.
+Mutating `uniforms.uTime.value` directly rather than calling `setState` is intentional. It bypasses
+React's reconciler entirely, which is how the animation stays at 60fps.
 
 ## GLSL shaders: programmable pixels
 
-The background of this site is not a static gradient. It's a **fragment shader** — a small program
-that runs on the GPU and computes the colour of every single pixel independently.
+The background of this site is not a static gradient. It is a **fragment shader**, a small program
+that runs on the GPU and computes the colour of every pixel independently.
 
 Shaders are written in **GLSL** (OpenGL Shading Language), which is C-like syntax that compiles to
 GPU code. There are two types:
@@ -69,17 +69,20 @@ GPU code. There are two types:
 - **Vertex shader**: runs per-vertex, determines where things are on screen
 - **Fragment shader**: runs per-pixel, determines the colour
 
-The nebula background uses **Simplex noise** — a smooth, naturally-varying noise function — layered
-multiple times (**fBm**, fractional Brownian motion) to create the wispy, organic look:
+The nebula background uses **Simplex noise**, a smooth, naturally varying noise function, layered
+multiple times (**fBm**, or fractional Brownian motion) to create the wispy, organic look:
 
 ```glsl
+uniform float uOctaves; // detail level, lowered on weak GPUs
+
 float fbm(vec2 p) {
   float total = 0.0;
   float amp = 0.5;
   for (int i = 0; i < 5; i++) {
-    total += snoise(p) * amp;  // add a layer of noise
-    p *= 2.02;                  // zoom in for next layer
-    amp *= 0.5;                 // quieter each time
+    if (float(i) >= uOctaves) break; // bail out early when the GPU is busy
+    total += snoise(p) * amp;        // add a layer of noise
+    p *= 2.02;                       // zoom in for the next layer
+    amp *= 0.5;                      // quieter each time
   }
   return total;
 }
@@ -87,49 +90,86 @@ float fbm(vec2 p) {
 
 Each loop iteration adds finer detail at half the amplitude. The result is something that looks like
 real nebula structure. The `uTime` uniform passed from `useFrame` is added to the noise coordinates,
-which makes it animate over time.
+which makes it animate over time. (`uOctaves` is normally 5; the performance section below explains
+why it sometimes drops to 3.)
 
 The three colours (`uColorDeep`, `uColorTeal`, `uColorViolet`) are mixed based on the noise value,
 creating regions of different colour in the nebula.
 
 ## MeshDistortMaterial: organic blob effect
 
-The project nodes use `MeshDistortMaterial` from `@react-three/drei`. Under the hood this is a
-custom shader that distorts the mesh's vertices in the vertex shader using noise:
+The project nodes use `MeshDistortMaterial` from `@react-three/drei`. Under the hood this is a custom
+shader that distorts the mesh's vertices in the vertex shader using noise:
 
 ```glsl
 // simplified from drei's implementation
 transformed += normalize(transformed) * snoise(transformed + uTime) * distort;
 ```
 
-The `distort` prop controls how much the sphere deforms, and `speed` controls how fast. Combined
-with emissive intensity (how much the material glows regardless of lighting), this gives the
-pulsing, organic appearance.
+The `distort` prop controls how much the sphere deforms, and `speed` controls how fast. Combined with
+emissive intensity (how much the material glows regardless of lighting), this gives the pulsing,
+organic appearance.
 
 ## Drei: helpers for common R3F patterns
 
 `@react-three/drei` is a utility library for R3F. This site uses:
 
-- **`<Float>`** — wraps a mesh in a subtle floating animation (sine-wave position + gentle rotation)
-- **`<Html>`** — renders HTML DOM elements positioned in 3D space (used for the project name labels)
-- **Postprocessing** — via `@react-three/postprocessing`, which wraps the `postprocessing` library's
-  effects (Bloom here) in R3F components
+- **`<Float>`** wraps a mesh in a subtle floating animation (sine-wave position plus gentle rotation)
+- **`<Html>`** renders HTML DOM elements positioned in 3D space (used for the project name labels)
+- **Postprocessing** via `@react-three/postprocessing`, which wraps the `postprocessing` library's
+  effects in R3F components. This site stacks bloom, ACES tone mapping, a vignette, chromatic
+  aberration, and a touch of grain.
 
 **Bloom** is a post-processing effect: after the scene renders to a framebuffer, a second pass
 identifies bright pixels (above `luminanceThreshold`) and blurs them outward, simulating the
 light-bleed you'd see from real bright lights. It's what makes the nodes look like they're glowing
 rather than just brightly coloured.
 
+## Keeping it smooth on weaker machines
+
+The first time I opened this on an older laptop it ran like a slideshow. It is worth understanding
+why. The nebula is a fullscreen shader that runs two fBm calls of five octaves each, so it computes
+roughly ten simplex-noise samples for every pixel, every frame. On top of that sit five fullscreen
+post-processing passes, and the whole scene renders at up to twice the device pixel ratio. On a
+strong GPU that is fine. On a weak one it falls over.
+
+The fix is to stop rendering at a fixed quality and let the scene react to the real frame rate.
+`@react-three/drei` ships a `PerformanceMonitor` that watches the frame rate and hands you a quality
+factor between 0 (struggling) and 1 (comfortable):
+
+```tsx
+<PerformanceMonitor
+  onChange={({ factor }) => {
+    qualityRef.current = factor
+    setDpr(Number((MIN_DPR + (MAX_DPR - MIN_DPR) * factor).toFixed(2)))
+  }}
+  onFallback={() => setDpr(MIN_DPR)}
+/>
+```
+
+Two things move with that factor. The first is render resolution. The canvas `dpr` scales between
+0.75 and 2, and because every fullscreen pass costs in proportion to the pixel count, this one lever
+reclaims most of the frame time on a struggling machine. The second is the nebula's detail. The
+`fbm` loop reads the `uOctaves` uniform and bails out early, so a busy GPU computes three octaves
+instead of five, with no shader recompile to cause a stutter.
+
+I also dropped the post composer's multisampling from 8 to 4 and turned off canvas-level
+antialiasing, since the composer resolves antialiasing in its own buffer and the bloom hides most of
+the remaining edge artifacts.
+
+The result is that a capable machine still gets full resolution and all five octaves, while a weak
+one quietly steps down until the frames are smooth and then climbs back when it can. You are not
+supposed to notice it happening, which is the whole point.
+
 ## View Transitions API
 
 When you click a project node, the navigation to its detail page uses the
-[View Transitions API](https://developer.mozilla.org/en-US/docs/Web/API/View_Transitions_API) — a
-browser API (Chrome/Edge, progressively enhanced elsewhere) that captures "before" and "after"
+[View Transitions API](https://developer.mozilla.org/en-US/docs/Web/API/View_Transitions_API), a
+browser API (Chrome and Edge, progressively enhanced elsewhere) that captures "before" and "after"
 snapshots of the page and morphs between them.
 
-The morph is wired up via React Router v7's `viewTransition` prop on `<Link>`. The specific
-element that morphs is identified by setting the same `view-transition-name` CSS property on both
-sides:
+The morph is wired up via React Router v7's `viewTransition` prop on `<Link>`. The specific element
+that morphs is identified by setting the same `view-transition-name` CSS property on both sides:
 
 ```css
 /* on the node's label in the canvas */
@@ -143,9 +183,9 @@ The browser's default cross-fade becomes a smooth positional morph of that speci
 
 ## Biome: one tool for lint and format
 
-[Biome](https://biomejs.dev/) replaces both ESLint and Prettier with a single Rust-based tool. It's
-dramatically faster (milliseconds vs seconds on large codebases) and the configuration is a single
-`biome.json` instead of `.eslintrc`, `.prettierrc`, and associated plugins.
+[Biome](https://biomejs.dev/) replaces both ESLint and Prettier with a single Rust-based tool. It is
+dramatically faster (milliseconds versus seconds on large codebases) and the configuration is a
+single `biome.json` instead of `.eslintrc`, `.prettierrc`, and associated plugins.
 
 The tradeoff is fewer rules than ESLint's plugin ecosystem, but for a project like this the
 recommended ruleset is more than sufficient. The key settings here:
@@ -163,25 +203,27 @@ recommended ruleset is more than sufficient. The key settings here:
 
 ## MDX + Shiki: blog with code highlighting
 
-The blog (including this post) is written in [MDX](https://mdxjs.com/) — Markdown with embedded
-React components. The MDX compiler (via `@mdx-js/rollup`) processes each `.mdx` file at build time
-into a React component.
+The blog (including this post) is written in [MDX](https://mdxjs.com/), which is Markdown with
+embedded React components. The MDX compiler (via `@mdx-js/rollup`) processes each `.mdx` file at build
+time into a React component.
 
 [Shiki](https://shiki.style/) handles syntax highlighting. Unlike runtime highlighters (Prism,
 Highlight.js), Shiki runs at build time via `@shikijs/rehype` and outputs pre-highlighted HTML using
 VS Code's tokeniser and the same grammar files. Zero client-side highlighting cost.
 
-The pipeline: MDX file → remark parses Markdown → `remark-frontmatter` strips YAML frontmatter →
-`remark-mdx-frontmatter` re-exports it as a named `frontmatter` export → `@shikijs/rehype` converts
-fenced code blocks to highlighted HTML → the React component is bundled.
+The pipeline: MDX file goes through remark to parse the Markdown, `remark-frontmatter` strips the
+YAML frontmatter, `remark-mdx-frontmatter` re-exports it as a named `frontmatter` export,
+`@shikijs/rehype` converts fenced code blocks to highlighted HTML, and the React component is bundled.
 
 The `frontmatter` named export is how the blog index knows each post's title, date, and type without
-importing the full MDX content — Vite's `import.meta.glob` with `{ eager: true, import: 'frontmatter' }`
+importing the full MDX content. Vite's `import.meta.glob` with `{ eager: true, import: 'frontmatter' }`
 extracts just that export at build time.
 
 ## The build and deploy pipeline
 
-Everything is orchestrated by **Bun** (package manager + task runner) and built by **Vite**:
+I went with **Bun** and **Vite** here instead of something like Next.js, because this is a pure
+client-side experience with no server and no SSR to worry about. Bun is the package manager and task
+runner, and Vite handles bundling:
 
 ```
 bun install        → resolves deps, writes bun.lock (lockfile for reproducible CI)
@@ -191,14 +233,15 @@ bun run lint       → biome check (lint + format verification)
 ```
 
 On `git push main`, a GitHub Actions workflow (`oven-sh/setup-bun` → `bun install --frozen-lockfile`
-→ `bun run build`) uploads `dist/` to GitHub Pages using `actions/deploy-pages`. The entire
-cycle from push to live site takes about 30 seconds.
+→ `bun run build`) uploads `dist/` to GitHub Pages using `actions/deploy-pages`. The entire cycle
+from push to live site takes about 30 seconds.
 
 The `dist/` directory contains:
-- `index.html` — entry point
-- `assets/index-[hash].js` — app code (~45 KB gzip)
-- `assets/vendor-3d-[hash].js` — Three.js + R3F (~314 KB gzip, lazy-loaded)
-- `assets/GardenCanvas-[hash].js` — scene code (~2 KB gzip, lazy-loaded)
+- `index.html`, the entry point
+- `assets/index-[hash].js`, the app code (about 25 KB gzipped)
+- `assets/vendor-3d-[hash].js`, Three.js and React Three Fiber (about 317 KB gzipped, lazy-loaded)
+- `assets/CosmosCanvas-[hash].js`, the scene code (about 5 KB gzipped, lazy-loaded)
 
-The 3D libraries are code-split into their own chunk via `manualChunks` in `vite.config.ts` and
-only fetched when the canvas actually mounts, so first paint is fast even on slow connections.
+The 3D libraries are code-split into their own chunk and only fetched when the canvas actually mounts.
+The scene is also deferred until just after first paint, which dropped the initial download from
+around 341 KB to about 89 KB, so the page comes up fast even on a slow connection.
