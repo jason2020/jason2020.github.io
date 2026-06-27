@@ -60,6 +60,7 @@ export const nebulaFragment = /* glsl */ `
   uniform vec3 uColorDeep;
   uniform vec3 uColorTeal;
   uniform vec3 uColorViolet;
+  uniform float uOctaves; // FBM detail, scaled down on weak GPUs (3 → 5)
 
   // Ashima Arts simplex noise (2D) — public domain.
   vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
@@ -91,10 +92,14 @@ export const nebulaFragment = /* glsl */ `
     return 130.0 * dot(m, g);
   }
 
+  // Up to 5 octaves of simplex noise. The loop bound is a compile-time constant
+  // (required by GLSL), but uOctaves lets us bail early at runtime so a struggling
+  // GPU computes fewer octaves — far cheaper, with no shader recompile.
   float fbm(vec2 p) {
     float total = 0.0;
     float amp = 0.5;
     for (int i = 0; i < 5; i++) {
+      if (float(i) >= uOctaves) break;
       total += snoise(p) * amp;
       p *= 2.02;
       amp *= 0.5;

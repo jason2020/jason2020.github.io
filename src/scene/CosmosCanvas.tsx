@@ -1,4 +1,4 @@
-import { Float, Html, MeshDistortMaterial } from '@react-three/drei'
+import { Float, Html, MeshDistortMaterial, PerformanceMonitor } from '@react-three/drei'
 import { Canvas, type ThreeEvent, useFrame } from '@react-three/fiber'
 import {
   Bloom,
@@ -33,7 +33,7 @@ const NEBULA_H = 20
 const NEBULA_PX = 2.4
 const NEBULA_PY = 1.5
 
-function NebulaBackground() {
+function NebulaBackground({ qualityRef }: { qualityRef: React.RefObject<number> }) {
   const uniforms = useMemo(
     () => ({
       uTime: { value: 0 },
@@ -41,6 +41,7 @@ function NebulaBackground() {
       uColorDeep: { value: new THREE.Color('#02040a') },
       uColorTeal: { value: new THREE.Color('#0c3b3f') },
       uColorViolet: { value: new THREE.Color('#2a1d52') },
+      uOctaves: { value: 5 },
     }),
     [],
   )
@@ -48,6 +49,11 @@ function NebulaBackground() {
 
   useFrame((state, dt) => {
     uniforms.uTime.value += dt
+
+    // Trade fullscreen noise detail for frame rate when the GPU is struggling.
+    // qualityRef is the live PerformanceMonitor factor (0 = struggling, 1 = fine).
+    const q = qualityRef.current
+    uniforms.uOctaves.value = q < 0.5 ? 3 : q < 0.8 ? 4 : 5
 
     // Project the cursor onto the nebula plane so the warp/glow sits exactly
     // under the pointer at any aspect ratio and camera distance.
@@ -230,22 +236,52 @@ function CameraRig() {
 
 // ─── canvas ───────────────────────────────────────────────────────────────────
 
+// Adaptive resolution bounds. A fullscreen procedural nebula + a 5-pass bloom
+// chain make pixel count the dominant cost, so we scale render resolution to the
+// machine: capable GPUs sharpen toward MAX_DPR, struggling ones drop to MIN_DPR
+// (driven live by drei's PerformanceMonitor) until frames are smooth again.
+const MIN_DPR = 0.75
+const MAX_DPR = 2
+const START_DPR = 1.25 // conservative cold start; PerformanceMonitor adjusts within ~1s
+
 export default function CosmosCanvas() {
   // A barely-there chromatic split at the edges — cinematic, not glitchy.
   const caOffset = useMemo(() => new THREE.Vector2(0.0006, 0.0006), [])
+  // Live render resolution, steered by measured frame rate (see PerformanceMonitor).
+  const [dpr, setDpr] = useState(START_DPR)
+  // The latest performance factor (0 = struggling, 1 = comfortable). A ref so the
+  // nebula can read it every frame to scale noise detail without re-rendering React.
+  const qualityRef = useRef(1)
+
   return (
     <Canvas
       style={{ position: 'absolute', inset: 0 }}
-      dpr={[1, 2]}
-      gl={{ antialias: true }}
+      dpr={dpr}
+      // The EffectComposer resolves antialiasing in its own multisampled target,
+      // so canvas-level MSAA would just be a second, redundant buffer.
+      gl={{ antialias: false }}
       camera={{ position: [0, 0, INTRO_START_Z], fov: 50 }}
     >
+      {/* Watch the real frame rate and trade resolution + nebula detail for
+          smoothness when the GPU can't keep up — then climb back when it can. */}
+      <PerformanceMonitor
+        flipflops={3}
+        onChange={({ factor }) => {
+          qualityRef.current = factor
+          setDpr(Number((MIN_DPR + (MAX_DPR - MIN_DPR) * factor).toFixed(2)))
+        }}
+        onFallback={() => {
+          qualityRef.current = 0
+          setDpr(MIN_DPR)
+        }}
+      />
+
       <color attach="background" args={['#02040a']} />
       <fog attach="fog" args={['#02040a', 7, 20]} />
       <ambientLight intensity={0.6} />
       <pointLight position={[5, 5, 5]} intensity={60} color="#9be8ff" />
 
-      <NebulaBackground />
+      <NebulaBackground qualityRef={qualityRef} />
       <StarField />
       <ShootingStars />
 
@@ -255,7 +291,9 @@ export default function CosmosCanvas() {
 
       <CameraRig />
 
-      <EffectComposer>
+      {/* multisampling 4 (down from drei's default 8): with bloom softening edges,
+          the extra MSAA samples cost fullscreen bandwidth for no visible gain. */}
+      <EffectComposer multisampling={4}>
         <Bloom mipmapBlur intensity={1.2} luminanceThreshold={0.25} luminanceSmoothing={0.3} />
         {/* ACES filmic tone mapping: map the HDR scene to display range with a
             cinematic highlight roll-off. The composer otherwise renders with no
